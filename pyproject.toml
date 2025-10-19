@@ -9,4 +9,4 @@ dependencies = [
 ]
 
 [project.entry-points.pytest11]
-pyprodtest = "_pyprodtest.plugin"
+pyprodtest = "_pyprodtest.hooks"
