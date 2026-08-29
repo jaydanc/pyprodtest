@@ -192,6 +192,7 @@ button, input { margin: 0; }
 .muted-count { color: var(--text-muted); font-size: 0.75rem; }
 .test-list { background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--radius); overflow: hidden; }
 .test-row + .test-row { border-top: 1px solid var(--line-soft); }
+.test-row-running { background: var(--accent-soft); }
 .test-row summary { align-items: center; cursor: pointer; display: grid; gap: 1rem; grid-template-columns: 1.5rem minmax(0, 1fr) auto auto 1rem; list-style: none; padding: 0.9rem 1.1rem; }
 .test-row summary::-webkit-details-marker { display: none; }
 .test-row summary::after { display: none; }
@@ -200,6 +201,7 @@ button, input { margin: 0; }
 .status-icon { align-items: center; border-radius: 50%; display: flex; font-size: 0.7rem; font-weight: 800; height: 1.35rem; justify-content: center; width: 1.35rem; }
 .status-icon.passed { background: var(--success-soft); color: var(--success); }
 .status-icon.failed { background: var(--danger-soft); color: var(--danger); }
+.status-icon.running { background: var(--warning-soft); color: var(--warning); }
 .status-icon.skipped, .status-icon.pending { background: var(--panel-raised); color: var(--text-muted); }
 .test-row-title { min-width: 0; }
 .test-row-title strong { display: block; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -38,9 +38,10 @@ def step(*steps):
 
     def wrapper(fn):
         fn.test_meta = getattr(fn, "test_meta", {})
-        if not hasattr(fn.test_meta, "steps"):
-            fn.test_meta["steps"] = []
-        fn.test_meta["steps"].extend(steps)
+        existing_steps = fn.test_meta.get("steps", [])
+        # Decorators are applied from the bottom upwards, so prepend each
+        # group to retain the order in which stacked decorators are written.
+        fn.test_meta["steps"] = [*steps, *existing_steps]
         return fn
 
     return wrapper

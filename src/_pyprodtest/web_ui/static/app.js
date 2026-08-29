@@ -162,7 +162,7 @@ function renderTestRow(test) {
   const icon = { passed: "✓", failed: "×", skipped: "–", pending: "·" }[status] || "·";
   const subtitle = test.description || test.nodeid;
 
-  return `<details class="test-row">
+  return `<details class="test-row test-row-${status}">
     <summary>
       <span class="status-icon ${status}">${icon}</span>
       <span class="test-row-title">
@@ -225,11 +225,11 @@ function renderInput(inputRequest) {
   const requestId = inputRequest?.id || null;
   if (requestId === renderedInputId) return;
   renderedInputId = requestId;
+  elements.inputPanel.removeAttribute("aria-busy");
 
   if (!inputRequest) {
     elements.inputPanel.hidden = true;
     elements.inputPanel.innerHTML = "";
-    elements.inputPanel.removeAttribute("aria-busy");
     return;
   }
 
@@ -267,12 +267,11 @@ function setConnection(status, label) {
 
 function renderState(state) {
   const activeTest = state.tests.find((test) => test.outcome === "running") || null;
-  const otherTests = state.tests.filter((test) => test !== activeTest);
 
   renderSummary(state.tests);
   renderInput(state.input_request);
   renderActiveTest(activeTest);
-  renderTestList(otherTests);
+  renderTestList(state.tests);
   setConnection(state.run_complete ? "complete" : "live", state.run_complete ? "Complete" : "Live");
 }
 

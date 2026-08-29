@@ -24,7 +24,7 @@ def test_web_observer_exposes_live_record_updates():
     assert test["logs"][0]["message"] == "Ready"
 
 
-def test_web_observer_promotes_each_running_test_to_the_top():
+def test_web_observer_keeps_plan_order_while_tests_run():
     state = LiveState()
     observer = WebObserver(state)
     first = TestRecord(name="First")
@@ -38,8 +38,8 @@ def test_web_observer_promotes_each_running_test_to_the_top():
     observer.on_test_run(second)
 
     assert [test["name"] for test in state.snapshot()["tests"]] == [
-        "Second",
         "First",
+        "Second",
         "Third",
     ]
 
@@ -49,9 +49,9 @@ def test_web_observer_promotes_each_running_test_to_the_top():
     observer.on_test_run(third)
 
     assert [test["name"] for test in state.snapshot()["tests"]] == [
-        "Third",
-        "Second",
         "First",
+        "Second",
+        "Third",
     ]
 
 
@@ -96,6 +96,7 @@ def test_web_page_serves_packaged_ui_and_pico_css():
     script = client.get("/static/app.js").data
     assert b"No logs captured for this test." in script
     assert b'class="chevron"' in script
+    assert b'elements.inputPanel.removeAttribute("aria-busy")' in script
 
 
 def test_final_state_is_available_before_server_shutdown():
