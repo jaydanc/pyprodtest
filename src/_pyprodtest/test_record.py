@@ -2,23 +2,19 @@
 Data structure to hold test metadata.
 """
 
+from dataclasses import dataclass, field
 
+
+@dataclass
 class TestRecord:
-    """
-    Represents a test record
-    """
+    """Metadata and run state for one collected pytest test."""
 
-    def __init__(self, name, description, requirements, steps):
-        self.name = name
-        self.description = description
-        self.requirements = requirements
-        self.steps = steps
+    __test__ = False
 
-    def __repr__(self):
-        return (
-            f"TestRecord("
-            f"name={self.name}, "
-            f"description={self.description}, "
-            f"requirements={self.requirements}, "
-            f"steps={self.steps})"
-        )
+    name: str
+    description: str = ""
+    requirements: list[str] = field(default_factory=list)
+    steps: list[str] = field(default_factory=list)
+    nodeid: str = ""
+    outcome: str = "pending"
+    duration: float = 0.0

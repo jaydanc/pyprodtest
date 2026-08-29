@@ -10,4 +10,4 @@ def test_one():
 @req("REQ-1234", "REQ-5678")
 @step("Do this")
 def test_two():
-    assert True
+    assert False

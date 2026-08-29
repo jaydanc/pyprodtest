@@ -17,4 +17,6 @@ Figure 1 shows the composition of PyProdTest; it is made up of three logical gro
 2. Test Observers: anything that wants to know about the data. In this architecture, we have a `WebServer` which wants to be kept up to date, and two report generators who want to know this information.
 3. Input Provider: When input is requested, the assigned provider (in this case, `WebServer`) will handle the request.
 
+`TestObserver` is the one-to-many boundary between the core and those consumers. The core owns and updates each `TestRecord`, then calls `on_tests_collected(test_records)`, `on_test_run(test_record)`, and `on_test_end(test_record)` in lifecycle order. Observers consume that state and should not depend on pytest hook objects directly.
+
 This design makes it easier to expand what PyProdTest does, such as eventually adding a remote test observer. It also helps prevent breaking changes by limiting the number of modules which have this power; **care should be taken around the data model and interfaces**. Finally, it makes it easier to unit test our core functionality and observers/providers.
