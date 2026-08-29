@@ -1,2 +1,5 @@
 tests:
-  - test/test_integration.py
+  - test/integration/serial_test.py
+  - test/integration/status_light_test.py
+  - test/integration/diagnostics_test.py
+  - test/integration/failure_test.py

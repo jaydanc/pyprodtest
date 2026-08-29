@@ -63,7 +63,8 @@ production plan, create `pyprodtest.yaml` in the pytest project root:
 
 ```yaml
 tests:
-  - test/test_integration.py
+  - test/integration/serial_test.py
+  - test/integration/status_light_test.py
   - test/test_observers.py::test_html_observer_reports_lifecycle_and_escapes_content
 ```
 
