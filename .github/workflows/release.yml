@@ -47,7 +47,11 @@ jobs:
         run: uv run ruff check .
 
       - name: Run tests
-        run: uv run pytest -p pyprodtest --rootdir tmp test --ignore=test/integration
+        shell: bash
+        run: |
+          isolated_root="${RUNNER_TEMP}/pyprodtest-root"
+          mkdir -p "${isolated_root}"
+          uv run pytest -p pyprodtest --rootdir "${isolated_root}" test --ignore=test/integration
 
       - name: Build distributions
         run: uv build --no-sources
