@@ -97,13 +97,24 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     if _state is None or (test_record := _state.records.get(report.nodeid)) is None:
         return
 
+    _update_test_record(test_record, report)
+
+    if report.when == "teardown":
+        _state.on_test_end(test_record)
+
+
+def _update_test_record(test_record: TestRecord, report: pytest.TestReport) -> None:
+    """Apply one pytest phase report to a domain test record."""
     test_record.duration += report.duration
     if report.failed:
         test_record.outcome = "failed"
+        failure_reason = report.longreprtext or str(report.longrepr)
+        if test_record.failure_reason:
+            test_record.failure_reason += f"\n\n{failure_reason}"
+        else:
+            test_record.failure_reason = failure_reason
+        LOGGER.error("Test %s failed:\n%s", report.nodeid, failure_reason)
     elif report.when == "call" and test_record.outcome != "failed":
         test_record.outcome = report.outcome
     elif report.skipped and test_record.outcome not in {"failed", "passed"}:
         test_record.outcome = "skipped"
-
-    if report.when == "teardown":
-        _state.on_test_end(test_record)

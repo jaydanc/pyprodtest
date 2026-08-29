@@ -18,3 +18,4 @@ class TestRecord:
     nodeid: str = ""
     outcome: str = "pending"
     duration: float = 0.0
+    failure_reason: str = ""

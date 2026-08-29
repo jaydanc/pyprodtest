@@ -47,12 +47,13 @@ class HtmlObserver(TestObserver):
     .passed {{ color: #137333; }}
     .failed {{ color: #c5221f; }}
     .running {{ color: #b06000; }}
+    pre {{ margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }}
   </style>
 </head>
 <body>
   <h1>PyProdTest report</h1>
   <table>
-    <thead><tr><th>Test</th><th>Description</th><th>Requirements</th><th>Steps</th><th>Outcome</th><th>Duration</th></tr></thead>
+    <thead><tr><th>Test</th><th>Description</th><th>Requirements</th><th>Steps</th><th>Outcome</th><th>Failure reason</th><th>Duration</th></tr></thead>
     <tbody>
 {rows}
     </tbody>
@@ -73,6 +74,7 @@ class HtmlObserver(TestObserver):
             f"<td>{escape(steps)}</td>"
             f'<td class="{escape(test_record.outcome)}">'
             f"{escape(test_record.outcome)}</td>"
+            f"<td><pre>{escape(test_record.failure_reason)}</pre></td>"
             f"<td>{test_record.duration:.3f}s</td>"
             "</tr>"
         )

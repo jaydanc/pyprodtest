@@ -30,6 +30,7 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
 
     record.outcome = "passed"
     record.duration = 0.125
+    record.failure_reason = "Expected <one>, got &two"
     observer.on_test_end(record)
     report = report_path.read_text(encoding="utf-8")
 
@@ -38,4 +39,5 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
     assert "REQ-1" in report
     assert "Start → Finish" in report
     assert "passed" in report
+    assert "Expected &lt;one&gt;, got &amp;two" in report
     assert "0.125s" in report
