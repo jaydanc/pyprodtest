@@ -1,0 +1,72 @@
+site_name: PyProdTest
+site_description: A pytest plugin for operator-assisted production testing
+site_url: https://jaydanc.github.io/pyprodtest/
+repo_url: https://github.com/jaydanc/pyprodtest
+repo_name: jaydanc/pyprodtest
+edit_uri: edit/main/doc/
+docs_dir: doc
+site_dir: site
+
+theme:
+  name: material
+  language: en
+  icon:
+    logo: material/test-tube
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: lime
+      toggle:
+        icon: material/weather-night
+        name: Use dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: lime
+      toggle:
+        icon: material/weather-sunny
+        name: Use light mode
+  features:
+    - content.code.copy
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.suggest
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Guides:
+      - Writing tests: writing-tests.md
+      - Configuration: configuration.md
+      - Reports: reports.md
+  - Reference:
+      - Public API: api.md
+      - Architecture: design.md
+  - Contributing: contributing.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/jaydanc/pyprodtest
+      name: PyProdTest on GitHub
+
+copyright: Copyright &copy; 2025–2026 Jaydan Cowell · MIT licensed
