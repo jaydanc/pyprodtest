@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 import pytest
 
 from _pyprodtest.observers import HtmlObserver, TestObserver
-from _pyprodtest.test_record import TestRecord
+from _pyprodtest.test_record import CapturedLog, TestRecord
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,6 +17,8 @@ class PluginState:
 
     observers: list[TestObserver] = field(default_factory=list)
     records: dict[str, TestRecord] = field(default_factory=dict)
+    current_test_nodeid: str | None = None
+    log_handler: logging.Handler | None = None
 
     def on_tests_collected(self, test_records: list[TestRecord]) -> None:
         for observer in self.observers:
@@ -32,6 +34,18 @@ class PluginState:
 
 
 _state: PluginState | None = None
+
+
+class TestLogHandler(logging.Handler):
+    """Attach log records to the currently executing test."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if _state is None or _state.current_test_nodeid is None:
+            return
+
+        test_record = _state.records.get(_state.current_test_nodeid)
+        if test_record is not None:
+            test_record.logs.append(CapturedLog.from_record(record))
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -53,13 +67,25 @@ def pytest_configure(config: pytest.Config) -> None:
     if html_path:
         observers.append(HtmlObserver(html_path))
 
-    _state = PluginState(observers=observers)
+    root_logger = logging.getLogger()
+    handler = TestLogHandler()
+    root_logger.addHandler(handler)
+    if not root_logger.isEnabledFor(logging.INFO):
+        root_logger.setLevel(logging.INFO)
+
+    _state = PluginState(
+        observers=observers,
+        log_handler=handler,
+    )
     LOGGER.debug("PyProdTest observers configured: %s", observers)
 
 
 def pytest_unconfigure() -> None:
     """Release state after the pytest session."""
     global _state
+    if _state is not None and _state.log_handler is not None:
+        root_logger = logging.getLogger()
+        root_logger.removeHandler(_state.log_handler)
     _state = None
 
 
@@ -90,6 +116,20 @@ def pytest_runtest_call(item: pytest.Item) -> None:
 
     test_record.outcome = "running"
     _state.on_test_run(test_record)
+
+
+def pytest_runtest_logstart(nodeid: str, location: tuple[str, int | None, str]) -> None:
+    """Begin attributing log records to a test."""
+    if _state is not None:
+        _state.current_test_nodeid = nodeid
+
+
+def pytest_runtest_logfinish(
+    nodeid: str, location: tuple[str, int | None, str]
+) -> None:
+    """Stop attributing log records after a test finishes."""
+    if _state is not None and _state.current_test_nodeid == nodeid:
+        _state.current_test_nodeid = None
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:

@@ -48,12 +48,14 @@ class HtmlObserver(TestObserver):
     .failed {{ color: #c5221f; }}
     .running {{ color: #b06000; }}
     pre {{ margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }}
+    .logs {{ margin: 0; padding-left: 1.2rem; }}
+    .log-time, .log-level, .log-name {{ color: #5f6368; }}
   </style>
 </head>
 <body>
   <h1>PyProdTest report</h1>
   <table>
-    <thead><tr><th>Test</th><th>Description</th><th>Requirements</th><th>Steps</th><th>Outcome</th><th>Failure reason</th><th>Duration</th></tr></thead>
+    <thead><tr><th>Test</th><th>Description</th><th>Requirements</th><th>Steps</th><th>Outcome</th><th>Logs</th><th>Failure reason</th><th>Duration</th></tr></thead>
     <tbody>
 {rows}
     </tbody>
@@ -66,6 +68,15 @@ class HtmlObserver(TestObserver):
     def _render_test(test_record: TestRecord) -> str:
         requirements = ", ".join(test_record.requirements)
         steps = " → ".join(test_record.steps)
+        logs = "".join(
+            "<li>"
+            f'<span class="log-time">{escape(log.timestamp)}</span> '
+            f'<span class="log-level">{escape(log.level)}</span> '
+            f'<span class="log-name">{escape(log.logger)}</span>: '
+            f"{escape(log.message)}"
+            "</li>"
+            for log in test_record.logs
+        )
         return (
             "      <tr>"
             f"<td>{escape(test_record.name)}</td>"
@@ -74,6 +85,7 @@ class HtmlObserver(TestObserver):
             f"<td>{escape(steps)}</td>"
             f'<td class="{escape(test_record.outcome)}">'
             f"{escape(test_record.outcome)}</td>"
+            f'<td><ul class="logs">{logs}</ul></td>'
             f"<td><pre>{escape(test_record.failure_reason)}</pre></td>"
             f"<td>{test_record.duration:.3f}s</td>"
             "</tr>"

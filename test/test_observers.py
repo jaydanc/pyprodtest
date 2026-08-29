@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from _pyprodtest.observers import HtmlObserver, TestObserver
-from _pyprodtest.test_record import TestRecord
+from _pyprodtest.test_record import CapturedLog, TestRecord
 
 
 def test_observer_is_an_interface():
@@ -18,6 +18,14 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
         description="Uses an & safely",
         requirements=["REQ-1"],
         steps=["Start", "Finish"],
+        logs=[
+            CapturedLog(
+                timestamp="2026-08-29T12:34:56.789+01:00",
+                level="INFO",
+                logger="test.instrument",
+                message="Measured <5V> & stable",
+            )
+        ],
     )
     observer = HtmlObserver(report_path)
 
@@ -39,5 +47,9 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
     assert "REQ-1" in report
     assert "Start → Finish" in report
     assert "passed" in report
+    assert "2026-08-29T12:34:56.789+01:00" in report
+    assert "INFO" in report
+    assert "test.instrument" in report
+    assert "Measured &lt;5V&gt; &amp; stable" in report
     assert "Expected &lt;one&gt;, got &amp;two" in report
     assert "0.125s" in report

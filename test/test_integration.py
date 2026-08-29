@@ -1,8 +1,11 @@
+import logging
+
 from pyprodtest import info, req, step
 
 
 @info(name="Test One", desc="This is the first test")
 def test_one():
+    logging.getLogger(__name__).info("Test One diagnostic value: %s", 42)
     assert True
 
 

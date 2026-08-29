@@ -25,3 +25,22 @@ def test_failed_report_captures_and_logs_failure_reason(caplog):
     assert record.failure_reason == "AssertionError: expected 1, got 2"
     assert record.duration == 0.25
     assert "AssertionError: expected 1, got 2" in caplog.text
+
+
+def test_captured_log_preserves_timestamp_level_logger_and_message():
+    source = logging.LogRecord(
+        name="test.instrument",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="Reading: %s V",
+        args=(5.1,),
+        exc_info=None,
+    )
+
+    captured = hooks.CapturedLog.from_record(source)
+
+    assert captured.timestamp
+    assert captured.level == "INFO"
+    assert captured.logger == "test.instrument"
+    assert captured.message == "Reading: 5.1 V"
