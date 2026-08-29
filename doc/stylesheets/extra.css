@@ -44,3 +44,34 @@
 .md-typeset .md-button {
   border-radius: 999px;
 }
+
+.md-typeset .product-preview {
+  margin: 2.25rem 0 2.75rem;
+}
+
+.md-typeset .product-preview img {
+  display: block;
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--md-default-fg-color) 16%, transparent);
+  border-radius: 0.9rem;
+  box-shadow:
+    0 1.25rem 3rem color-mix(in srgb, #020617 24%, transparent),
+    0 0.25rem 0.75rem color-mix(in srgb, #020617 12%, transparent);
+}
+
+.md-typeset .product-preview figcaption {
+  margin-top: 0.75rem;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+@media screen and (max-width: 44.984375em) {
+  .md-typeset .product-preview {
+    margin: 1.75rem -0.4rem 2.25rem;
+  }
+
+  .md-typeset .product-preview img {
+    border-radius: 0.65rem;
+  }
+}

@@ -7,6 +7,11 @@ framework.
 [Get started](getting-started.md){ .md-button .md-button--primary }
 [View on GitHub](https://github.com/jaydanc/pyprodtest){ .md-button }
 
+<figure class="product-preview" markdown>
+  ![PyProdTest operator console waiting for a device serial number](assets/images/operator-console.png)
+  <figcaption>Follow the run, review test details, and respond to prompts from one operator console.</figcaption>
+</figure>
+
 ## What it adds
 
 <div class="grid cards" markdown>
