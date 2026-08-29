@@ -86,6 +86,8 @@ def pytest_configure(config: pytest.Config) -> None:
     """Create isolated plugin state for this pytest session."""
     global _state
 
+    _enable_live_logging(config)
+
     observers: list[TestObserver] = []
     html_path = config.getoption("--pyprodtest-html")
     if html_path:
@@ -102,6 +104,14 @@ def pytest_configure(config: pytest.Config) -> None:
         log_handler=handler,
     )
     LOGGER.debug("PyProdTest observers configured: %s", observers)
+
+
+def _enable_live_logging(config: pytest.Config) -> None:
+    """Show INFO logs live unless the user configured another CLI level."""
+    if config.getoption("--log-cli-level") is not None:
+        return
+
+    config.option.log_cli_level = config.getini("log_cli_level") or "INFO"
 
 
 def pytest_unconfigure() -> None:
@@ -177,7 +187,6 @@ def _update_test_record(test_record: TestRecord, report: pytest.TestReport) -> N
             test_record.failure_reason += f"\n\n{failure_reason}"
         else:
             test_record.failure_reason = failure_reason
-        LOGGER.error("Test %s failed:\n%s", report.nodeid, failure_reason)
     elif report.when == "call" and test_record.outcome != "failed":
         test_record.outcome = report.outcome
     elif report.skipped and test_record.outcome not in {"failed", "passed"}:

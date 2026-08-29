@@ -38,3 +38,7 @@ def test_status_light(input):
 
 The plugin owns acceptor selection so tests use the same fixture in console and
 future live web runs.
+
+PyProdTest also streams `INFO` and higher log messages to the terminal during a
+run. Users can still select another threshold with pytest's
+`--log-cli-level=LEVEL` option.

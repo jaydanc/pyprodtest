@@ -5,7 +5,7 @@ from _pyprodtest import hooks
 from _pyprodtest.test_record import TestRecord
 
 
-def test_failed_report_captures_and_logs_failure_reason(caplog):
+def test_failed_report_captures_failure_reason():
     record = TestRecord(name="Broken test", nodeid="test_broken")
     report = SimpleNamespace(
         nodeid=record.nodeid,
@@ -18,13 +18,11 @@ def test_failed_report_captures_and_logs_failure_reason(caplog):
         longrepr=None,
     )
 
-    with caplog.at_level(logging.ERROR, logger=hooks.LOGGER.name):
-        hooks._update_test_record(record, report)
+    hooks._update_test_record(record, report)
 
     assert record.outcome == "failed"
     assert record.failure_reason == "AssertionError: expected 1, got 2"
     assert record.duration == 0.25
-    assert "AssertionError: expected 1, got 2" in caplog.text
 
 
 def test_captured_log_preserves_timestamp_level_logger_and_message():
@@ -44,3 +42,27 @@ def test_captured_log_preserves_timestamp_level_logger_and_message():
     assert captured.level == "INFO"
     assert captured.logger == "test.instrument"
     assert captured.message == "Reading: 5.1 V"
+
+
+def test_live_logging_defaults_to_info():
+    config = SimpleNamespace(
+        option=SimpleNamespace(log_cli_level=None),
+        getoption=lambda option: None,
+        getini=lambda option: "",
+    )
+
+    hooks._enable_live_logging(config)
+
+    assert config.option.log_cli_level == "INFO"
+
+
+def test_live_logging_preserves_explicit_cli_level():
+    config = SimpleNamespace(
+        option=SimpleNamespace(log_cli_level="DEBUG"),
+        getoption=lambda option: "DEBUG",
+        getini=lambda option: "",
+    )
+
+    hooks._enable_live_logging(config)
+
+    assert config.option.log_cli_level == "DEBUG"
