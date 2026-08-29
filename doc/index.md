@@ -11,28 +11,28 @@ framework.
 
 <div class="grid cards" markdown>
 
--   :material-account-voice:{ .lg .middle } **Operator input**
+-   **Operator input**
 
     ---
 
     Ask for text or a yes/no decision from the browser or terminal using one
     fixture.
 
--   :material-monitor-dashboard:{ .lg .middle } **Live execution view**
+-   **Live execution view**
 
     ---
 
     Follow collection, progress, logs, failures, and active prompts while pytest
     runs.
 
--   :material-format-list-numbered:{ .lg .middle } **Controlled test plans**
+-   **Controlled test plans**
 
     ---
 
     Select and order files or node IDs in `pyprodtest.yaml`. Mistyped entries
     fail clearly.
 
--   :material-file-chart:{ .lg .middle } **Useful reports**
+-   **Useful reports**
 
     ---
 
