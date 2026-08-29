@@ -85,7 +85,8 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
     assert "0.125s" in report
     assert "Measured data" in report
     assert "Voltage &lt;rail&gt;" in report
-    assert "chart.js@4.4.7" in report
+    assert "Chart.js v4.4.7" in report
+    assert "cdn.jsdelivr.net" not in report
     assert "2026-08-29T12:34:56.789+01:00" in report
 
 

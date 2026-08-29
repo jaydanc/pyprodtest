@@ -105,7 +105,10 @@ def test_web_page_serves_packaged_ui_and_pico_css():
     assert b'elements.inputPanel.removeAttribute("aria-busy")' in script
     assert b"new Chart(canvas" in script
     assert b"series.points.map((point) => point.y)" in script
-    assert b"chart.js@4.4.7" in client.get("/").data
+    assert b"/assets/chart.umd.min.js" in client.get("/").data
+    chart_js = client.get("/assets/chart.umd.min.js")
+    assert chart_js.mimetype == "application/javascript"
+    assert b"Chart.js v4.4.7" in chart_js.data
 
 
 def test_live_state_serializes_measurement_series_for_the_chart():
