@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from types import SimpleNamespace
 
 from _pyprodtest import hooks
@@ -66,3 +67,31 @@ def test_live_logging_preserves_explicit_cli_level():
     hooks._enable_live_logging(config)
 
     assert config.option.log_cli_level == "DEBUG"
+
+
+def test_yaml_plan_selects_and_orders_files_and_node_ids(tmp_path: Path):
+    (tmp_path / "pyprodtest.yaml").write_text(
+        "tests:\n  - test/test_integration.py\n  - test/test_hooks.py::test_second\n",
+        encoding="utf-8",
+    )
+    deselected = []
+    config = SimpleNamespace(
+        rootpath=tmp_path,
+        getoption=lambda option: None,
+        hook=SimpleNamespace(pytest_deselected=lambda items: deselected.extend(items)),
+    )
+    items = [
+        SimpleNamespace(nodeid="test/test_hooks.py::test_first"),
+        SimpleNamespace(nodeid="test/test_integration.py::test_input"),
+        SimpleNamespace(nodeid="test/test_hooks.py::test_second"),
+        SimpleNamespace(nodeid="test/test_integration.py::test_output"),
+    ]
+
+    hooks.pytest_collection_modifyitems(config, items)
+
+    assert [item.nodeid for item in items] == [
+        "test/test_integration.py::test_input",
+        "test/test_integration.py::test_output",
+        "test/test_hooks.py::test_second",
+    ]
+    assert [item.nodeid for item in deselected] == ["test/test_hooks.py::test_first"]

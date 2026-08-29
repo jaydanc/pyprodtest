@@ -8,6 +8,7 @@ import pytest
 
 from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor, TestInput
 from _pyprodtest.observers import HtmlObserver, TestObserver
+from _pyprodtest.test_plan import apply_test_plan
 from _pyprodtest.test_record import CapturedLog, TestRecord
 from _pyprodtest.web_ui import WebUi
 
@@ -99,6 +100,16 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         type=int,
         help="Port for the live web UI; 0 selects a free port (default: 8765).",
     )
+    group.addoption(
+        "--pyprodtest-plan",
+        metavar="PATH",
+        help="Select and order tests using a YAML plan (default: pyprodtest.yaml).",
+    )
+    group.addoption(
+        "--pyprodtest-ignore-plan",
+        action="store_true",
+        help="Ignore pyprodtest.yaml and use normal pytest collection.",
+    )
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -178,6 +189,13 @@ def pytest_report_collectionfinish(items: list[pytest.Item]) -> None:
     records = list(_state.records.values())
     LOGGER.debug("Collected test records: %s", records)
     _state.on_tests_collected(records)
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    """Apply an optional user-facing test plan to pytest's collected items."""
+    apply_test_plan(config, items)
 
 
 def pytest_runtest_call(item: pytest.Item) -> None:

@@ -1,0 +1,2 @@
+tests:
+  - test/test_integration.py
