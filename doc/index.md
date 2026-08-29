@@ -1,7 +1,7 @@
-# Production tests that operators can actually run
+# Production tests operators can run, using tools developers already know
 
 PyProdTest brings operator prompts, an always-current browser view, explicit
-test plans, and durable reports to pytest—without creating a second test
+test order, and durable reports to pytest—without creating a second test
 framework.
 
 [Get started](getting-started.md){ .md-button .md-button--primary }
