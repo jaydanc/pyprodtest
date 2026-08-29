@@ -11,12 +11,13 @@ uv run ruff format --check .
 uv run ruff check .
 uv run pytest -p pyprodtest
 
-PyProdTest always writes `pyprodtest-report.html` at the end of a run. Report
-names are extensionless settings; the HTML observer adds `.html`. Use the
-legacy path option to select another initial destination:
+PyProdTest always writes HTML, JSON, and CSV reports at the end of a run:
+`pyprodtest-report.html`, `pyprodtest-report.json`, and
+`pyprodtest-report.csv`. Report names are extensionless settings; each observer
+adds its own extension. Use the report option to select another base path:
 
 ```powershell
-uv run pytest -p pyprodtest --pyprodtest-html pyprodtest-report.html
+uv run pytest -p pyprodtest --pyprodtest-report reports/device-acceptance
 ```
 
 Tests can adjust the final report using the session-scoped `report` fixture.

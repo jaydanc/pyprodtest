@@ -1,8 +1,10 @@
+import csv
+import json
 from pathlib import Path
 
 import pytest
 
-from _pyprodtest.observers import HtmlObserver, TestObserver
+from _pyprodtest.observers import CsvObserver, HtmlObserver, JsonObserver, TestObserver
 from _pyprodtest.report_settings import ReportSettings
 from _pyprodtest.test_record import CapturedLog, TestRecord
 
@@ -73,3 +75,29 @@ def test_html_observer_can_be_disabled_by_report_settings(tmp_path: Path):
     observer.finalize()
 
     assert not settings.output_path.exists()
+
+
+def test_json_and_csv_observers_preserve_test_records(tmp_path: Path):
+    settings = ReportSettings(path=tmp_path, name="results")
+    record = TestRecord(
+        name="Device test",
+        requirements=["REQ-1"],
+        steps=["Measure voltage"],
+        outcome="passed",
+        duration=0.5,
+        logs=[CapturedLog("now", "INFO", "instrument", "Measured 5V")],
+    )
+    observers = [JsonObserver(settings), CsvObserver(settings)]
+    for observer in observers:
+        observer.on_tests_collected([record])
+        observer.finalize()
+
+    json_report = json.loads((tmp_path / "results.json").read_text(encoding="utf-8"))
+    assert json_report["summary"] == {"total": 1, "outcomes": {"passed": 1}}
+    assert json_report["tests"][0]["logs"][0]["message"] == "Measured 5V"
+
+    with (tmp_path / "results.csv").open(encoding="utf-8", newline="") as report:
+        row = next(csv.DictReader(report))
+    assert json.loads(row["requirements"]) == ["REQ-1"]
+    assert json.loads(row["steps"]) == ["Measure voltage"]
+    assert json.loads(row["logs"])[0]["message"] == "Measured 5V"

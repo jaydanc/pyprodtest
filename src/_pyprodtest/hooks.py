@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 import pytest
 
 from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor, TestInput
-from _pyprodtest.observers import HtmlObserver, TestObserver
+from _pyprodtest.observers import CsvObserver, HtmlObserver, JsonObserver, TestObserver
 from _pyprodtest.observers.web_ui import WebUi
 from _pyprodtest.report_settings import ReportSettings
 from _pyprodtest.test_plan import apply_test_plan
@@ -90,9 +90,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     """Register PyProdTest command-line options."""
     group = parser.getgroup("pyprodtest")
     group.addoption(
+        "--pyprodtest-report",
         "--pyprodtest-html",
+        dest="pyprodtest_report",
         default="pyprodtest-report",
-        help="Set the final HTML report output path.",
+        help="Set the base path for final HTML, JSON, and CSV reports.",
     )
     group.addoption(
         "--pyprodtest-webui",
@@ -137,15 +139,19 @@ def pytest_configure(config: pytest.Config) -> None:
 
     _enable_live_logging(config)
 
-    html_path = config.getoption("--pyprodtest-html")
-    report_settings = ReportSettings.from_output_path(html_path)
+    report_path = config.getoption("pyprodtest_report")
+    report_settings = ReportSettings.from_output_path(report_path)
     html_observer = HtmlObserver(report_settings)
-    observers: list[TestObserver] = [html_observer]
+    json_observer = JsonObserver(report_settings)
+    csv_observer = CsvObserver(report_settings)
+    observers: list[TestObserver] = [html_observer, json_observer, csv_observer]
 
     collect_only = config.getoption("--collect-only")
     cleanup_callbacks: list[Callable[[], None]] = []
     if not collect_only:
-        cleanup_callbacks.append(html_observer.finalize)
+        cleanup_callbacks.extend(
+            [html_observer.finalize, json_observer.finalize, csv_observer.finalize]
+        )
     input_acceptor: InputAcceptor = ConsoleInputAcceptor()
     if config.getoption("pyprodtest_webui") and not collect_only:
         web_ui = WebUi(
