@@ -3,17 +3,17 @@
 ## Requirements
 
 - Python 3.13 or newer
-- A uv-managed project
+- A [uv-managed project](https://docs.astral.sh/uv/)
 
 ## Install
 
-Once PyProdTest is published to PyPI:
+Add PyProdTest from PyPI:
 
 ```powershell
 uv add pyprodtest
 ```
 
-Until then, install directly from GitHub:
+To try the latest experimental build instead:
 
 ```powershell
 uv add "pyprodtest @ git+https://github.com/jaydanc/pyprodtest.git"
