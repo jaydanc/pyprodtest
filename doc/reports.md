@@ -2,7 +2,12 @@
 
 PyProdTest writes enabled report formats at pytest session shutdown. Every
 format is derived from the same collected `TestRecord` state, including test
-metadata, lifecycle outcome, failure information, and captured logs.
+metadata, lifecycle outcome, failure information, captured logs, and measured
+data.
+
+HTML reports display each named measurement series as a chart. JSON reports
+preserve measurements as nested series and points. CSV reports store the same
+structure as JSON in the `measurements` column so no points are lost.
 
 ## Choose formats and destination
 

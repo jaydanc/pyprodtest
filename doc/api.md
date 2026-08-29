@@ -37,7 +37,7 @@ def test_startup(): ...
 
 ## pytest fixtures
 
-The plugin also registers two fixtures. They are supplied by pytest rather than
+The plugin also registers three fixtures. They are supplied by pytest rather than
 imported from `pyprodtest`.
 
 ### `input`
@@ -58,6 +58,36 @@ The session-scoped fixture exposes:
 | `path` | Output directory |
 | `name` | Extensionless report base name |
 | `enabled` | Whether any reports are written |
+
+### `measure`
+
+Record a numeric value against the current timestamp:
+
+```python
+def test_voltage(device, measure) -> None:
+    measure(device.output_voltage(), "Voltage")
+```
+
+Repeated calls with the same name append points to the same live chart. A test
+can have multiple charts; give each series a different name:
+
+```python
+def test_power_rails(device, measure) -> None:
+    measure(device.output_voltage(), "Output voltage")
+    measure(device.output_current(), "Output current")
+```
+
+For an explicit numeric X axis, create a plot and add X/Y pairs:
+
+```python
+def test_calibration(device, measure) -> None:
+    calibration = measure.plot("Calibration")
+    calibration.add(0, device.output_voltage())
+    calibration.add(128, device.output_voltage())
+```
+
+Values and explicit X coordinates must be real numbers. A name cannot be shared
+between a timestamped series and an explicit X/Y plot within the same test.
 
 Modules under `_pyprodtest` are private implementation details and may change
 without preserving a public compatibility contract.

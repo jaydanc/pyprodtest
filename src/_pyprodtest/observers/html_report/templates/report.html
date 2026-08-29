@@ -6,6 +6,7 @@
     <title>PyProdTest report</title>
     <style>{{ pico_css | safe }}</style>
     <style>{{ theme_css | safe }}</style>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
       .report-status { color: var(--text-soft); }
       .report-status .connection-dot { background: var(--accent); }
@@ -58,6 +59,7 @@
         </div>
         <div class="test-list">
           {% for test in test_records %}
+            {% set test_index = loop.index0 %}
             <details class="test-row test-row-{{ test.outcome }}">
               <summary>
                 <span class="status-icon {{ test.outcome }}">
@@ -113,6 +115,34 @@
                   {% endfor %}
                 </ul>
 
+                {% if test.measurements %}
+                  <section class="measurements" aria-label="Measured data">
+                    <div class="measurement-heading">
+                      <span>Measured data</span>
+                      <span>{{ test.measurements | length }} {{ "series" if test.measurements | length == 1 else "series" }}</span>
+                    </div>
+                    <div class="measurement-grid">
+                      {% for series in test.measurements %}
+                        <article class="measurement-card">
+                          <div class="measurement-summary">
+                            <div>
+                              <span class="measurement-name">{{ series.name }}</span>
+                              <small>{{ "Time series" if series.x_axis == "time" else "X / Y plot" }}</small>
+                            </div>
+                            <div class="measurement-latest">
+                              <strong>{{ series.points[-1].y if series.points else "—" }}</strong>
+                              <small>Latest</small>
+                            </div>
+                          </div>
+                          <div class="chart-wrap">
+                            <canvas id="measurement-{{ test_index }}-{{ loop.index0 }}" aria-label="{{ series.name }} chart" role="img"></canvas>
+                          </div>
+                        </article>
+                      {% endfor %}
+                    </div>
+                  </section>
+                {% endif %}
+
                 {% if test.failure_reason %}
                   <div class="failure">
                     <strong>Failure details</strong>
@@ -127,5 +157,61 @@
         </div>
       </section>
     </main>
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        const chartSpecs = [
+          {% for test in test_records %}
+            {% set test_loop = loop %}
+            {% for series in test.measurements %}
+              {
+                id: "measurement-{{ test_loop.index0 }}-{{ loop.index0 }}",
+                xAxis: {{ series.x_axis | tojson }},
+                points: [
+                  {% for point in series.points %}{ x: {{ point.x | tojson }}, y: {{ point.y | tojson }} },{% endfor %}
+                ],
+              },
+            {% endfor %}
+          {% endfor %}
+        ];
+
+        chartSpecs.forEach((series) => {
+          const canvas = document.getElementById(series.id);
+          if (!canvas || typeof Chart === "undefined") return;
+          const isTime = series.xAxis === "time";
+          const labels = isTime
+            ? series.points.map((point) => new Date(point.x).toLocaleTimeString([], { hour12: false }))
+            : undefined;
+          const data = isTime
+            ? series.points.map((point) => point.y)
+            : series.points;
+          new Chart(canvas, {
+            type: "line",
+            data: {
+              labels,
+              datasets: [{
+                data,
+                borderColor: "#2eb8ff",
+                backgroundColor: "rgba(46, 184, 255, 0.12)",
+                borderWidth: 2,
+                pointRadius: data.length > 40 ? 0 : 2.5,
+                pointHoverRadius: 4,
+                fill: true,
+                tension: 0.22,
+              }],
+            },
+            options: {
+              animation: false,
+              maintainAspectRatio: false,
+              parsing: isTime,
+              plugins: { legend: { display: false }, tooltip: { displayColors: false } },
+              scales: {
+                x: { type: isTime ? "category" : "linear", grid: { color: "rgba(158, 176, 195, 0.08)" }, ticks: { color: "#6f8297", maxTicksLimit: 7 } },
+                y: { grid: { color: "rgba(158, 176, 195, 0.08)" }, ticks: { color: "#6f8297", maxTicksLimit: 6 } },
+              },
+            },
+          });
+        });
+      });
+    </script>
   </body>
 </html>

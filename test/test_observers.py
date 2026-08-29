@@ -12,7 +12,12 @@ from _pyprodtest.observers import (
     TestObserver,
 )
 from _pyprodtest.report_settings import ReportSettings
-from _pyprodtest.test_record import CapturedLog, TestRecord
+from _pyprodtest.test_record import (
+    CapturedLog,
+    MeasurementPoint,
+    MeasurementSeries,
+    TestRecord,
+)
 
 
 def test_observer_is_an_interface():
@@ -33,6 +38,13 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
                 level="INFO",
                 logger="test.instrument",
                 message="Measured <5V> & stable",
+            )
+        ],
+        measurements=[
+            MeasurementSeries(
+                name="Voltage <rail>",
+                x_axis="time",
+                points=[MeasurementPoint(x="2026-08-29T12:34:56.789+01:00", y=5.02)],
             )
         ],
     )
@@ -71,6 +83,10 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
     assert "Measured &lt;5V&gt; &amp; stable" in report
     assert "Expected &lt;one&gt;, got &amp;two" in report
     assert "0.125s" in report
+    assert "Measured data" in report
+    assert "Voltage &lt;rail&gt;" in report
+    assert "chart.js@4.4.7" in report
+    assert "2026-08-29T12:34:56.789+01:00" in report
 
 
 def test_html_observer_can_be_disabled_by_report_settings(tmp_path: Path):
@@ -92,6 +108,18 @@ def test_json_and_csv_observers_preserve_test_records(tmp_path: Path):
         outcome="passed",
         duration=0.5,
         logs=[CapturedLog("now", "INFO", "instrument", "Measured 5V")],
+        measurements=[
+            MeasurementSeries(
+                name="Voltage",
+                x_axis="time",
+                points=[MeasurementPoint("2026-08-29T12:00:00Z", 5.0)],
+            ),
+            MeasurementSeries(
+                name="Calibration",
+                x_axis="linear",
+                points=[MeasurementPoint(128.0, 2.5)],
+            ),
+        ],
     )
     observers = [JsonObserver(settings), CsvObserver(settings)]
     for observer in observers:
@@ -101,12 +129,22 @@ def test_json_and_csv_observers_preserve_test_records(tmp_path: Path):
     json_report = json.loads((tmp_path / "results.json").read_text(encoding="utf-8"))
     assert json_report["summary"] == {"total": 1, "outcomes": {"passed": 1}}
     assert json_report["tests"][0]["logs"][0]["message"] == "Measured 5V"
+    assert [series["name"] for series in json_report["tests"][0]["measurements"]] == [
+        "Voltage",
+        "Calibration",
+    ]
+    assert json_report["tests"][0]["measurements"][1]["points"] == [
+        {"x": 128.0, "y": 2.5}
+    ]
 
     with (tmp_path / "results.csv").open(encoding="utf-8", newline="") as report:
         row = next(csv.DictReader(report))
     assert json.loads(row["requirements"]) == ["REQ-1"]
     assert json.loads(row["steps"]) == ["Measure voltage"]
     assert json.loads(row["logs"])[0]["message"] == "Measured 5V"
+    measurements = json.loads(row["measurements"])
+    assert [series["name"] for series in measurements] == ["Voltage", "Calibration"]
+    assert measurements[0]["points"][0]["y"] == 5.0
 
 
 def test_pdf_observer_writes_report_with_test_content(tmp_path: Path):

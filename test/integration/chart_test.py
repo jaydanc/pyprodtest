@@ -8,8 +8,12 @@ from test.integration.fixture.device import Device
 @req("REQ-1234")
 @step("Run the chart test")
 def test_chart(input, report, device: Device, measure) -> None:
-    for i in range(20):
+    for i in range(5):
         measure(i, "iteration")
+        time.sleep(1)
+
+    for i in range(5):
+        measure(i, "iteration 2")
         time.sleep(1)
 
     plot = measure.plot("2d plot")
