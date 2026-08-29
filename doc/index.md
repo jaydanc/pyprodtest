@@ -8,7 +8,7 @@ framework.
 [View on GitHub](https://github.com/jaydanc/pyprodtest){ .md-button }
 
 <figure class="product-preview" markdown>
-  ![PyProdTest operator console waiting for a device serial number](assets/images/operator-console.png)
+  ![PyProdTest operator console waiting for a device serial number](assets/images/operator-console-v2.png)
   <figcaption>Follow the run, review test details, and respond to prompts from one operator console.</figcaption>
 </figure>
 
