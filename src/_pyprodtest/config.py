@@ -26,6 +26,7 @@ class ReportsConfig:
     html: bool = True
     json: bool = True
     csv: bool = True
+    pdf: bool = True
 
 
 @dataclass(frozen=True)
@@ -74,6 +75,7 @@ def load_config(rootpath: Path) -> PyProdTestConfig:
             html=_boolean(reports.get("html", True), "reports.html"),
             json=_boolean(reports.get("json", True), "reports.json"),
             csv=_boolean(reports.get("csv", True), "reports.csv"),
+            pdf=_boolean(reports.get("pdf", True), "reports.pdf"),
         ),
     )
 

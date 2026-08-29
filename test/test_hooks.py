@@ -117,6 +117,7 @@ reports:
   html: true
   json: false
   csv: false
+  pdf: true
 tests:
   - test/device_test.py
 """,
@@ -133,6 +134,7 @@ tests:
     assert config.reports.html is True
     assert config.reports.json is False
     assert config.reports.csv is False
+    assert config.reports.pdf is True
 
 
 def test_ui_title_has_default_without_yaml(tmp_path: Path):
@@ -144,10 +146,13 @@ def test_ui_title_has_default_without_yaml(tmp_path: Path):
     assert config.reports.html is True
     assert config.reports.json is True
     assert config.reports.csv is True
+    assert config.reports.pdf is True
 
 
 def test_only_enabled_report_observers_are_composed():
-    config = PyProdTestConfig(reports=ReportsConfig(html=False, json=True, csv=False))
+    config = PyProdTestConfig(
+        reports=ReportsConfig(html=False, json=True, csv=False, pdf=False)
+    )
 
     observers, cleanup_callbacks = hooks._create_report_observers(
         config, ReportSettings(), collect_only=False

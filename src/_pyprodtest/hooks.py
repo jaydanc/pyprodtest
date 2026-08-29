@@ -10,7 +10,13 @@ import pytest
 
 from _pyprodtest.config import PyProdTestConfig, apply_test_plan, load_config
 from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor, TestInput
-from _pyprodtest.observers import CsvObserver, HtmlObserver, JsonObserver, TestObserver
+from _pyprodtest.observers import (
+    CsvObserver,
+    HtmlObserver,
+    JsonObserver,
+    PdfObserver,
+    TestObserver,
+)
 from _pyprodtest.observers.web_ui import WebUi
 from _pyprodtest.report_settings import ReportSettings
 from _pyprodtest.test_record import CapturedLog, TestRecord
@@ -170,6 +176,12 @@ def _create_report_observers(
         observers.append(csv_observer)
         if not collect_only:
             cleanup_callbacks.append(csv_observer.finalize)
+
+    if project_config.reports.pdf:
+        pdf_observer = PdfObserver(report_settings, project_config.name)
+        observers.append(pdf_observer)
+        if not collect_only:
+            cleanup_callbacks.append(pdf_observer.finalize)
 
     return observers, cleanup_callbacks
 

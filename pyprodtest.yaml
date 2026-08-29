@@ -8,6 +8,7 @@ reports:
   html: true
   json: true
   csv: true
+  pdf: true
 tests:
   - test/integration/serial_test.py
   - test/integration/status_light_test.py

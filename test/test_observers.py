@@ -4,7 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from _pyprodtest.observers import CsvObserver, HtmlObserver, JsonObserver, TestObserver
+from _pyprodtest.observers import (
+    CsvObserver,
+    HtmlObserver,
+    JsonObserver,
+    PdfObserver,
+    TestObserver,
+)
 from _pyprodtest.report_settings import ReportSettings
 from _pyprodtest.test_record import CapturedLog, TestRecord
 
@@ -101,3 +107,27 @@ def test_json_and_csv_observers_preserve_test_records(tmp_path: Path):
     assert json.loads(row["requirements"]) == ["REQ-1"]
     assert json.loads(row["steps"]) == ["Measure voltage"]
     assert json.loads(row["logs"])[0]["message"] == "Measured 5V"
+
+
+def test_pdf_observer_writes_report_with_test_content(tmp_path: Path):
+    settings = ReportSettings(path=tmp_path, name="results")
+    observer = PdfObserver(settings, "Device acceptance")
+    observer.on_tests_collected(
+        [
+            TestRecord(
+                name="Voltage check",
+                description="Measure the supply rail",
+                requirements=["REQ-5V"],
+                steps=["Connect meter", "Read voltage"],
+                outcome="passed",
+                duration=0.25,
+                logs=[CapturedLog("now", "INFO", "instrument", "Measured 5V")],
+            )
+        ]
+    )
+
+    observer.finalize()
+
+    report = tmp_path / "results.pdf"
+    assert report.read_bytes().startswith(b"%PDF-")
+    assert report.stat().st_size > 1_000
