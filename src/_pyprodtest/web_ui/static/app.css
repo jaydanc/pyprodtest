@@ -192,10 +192,11 @@ button, input { margin: 0; }
 .muted-count { color: var(--text-muted); font-size: 0.75rem; }
 .test-list { background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--radius); overflow: hidden; }
 .test-row + .test-row { border-top: 1px solid var(--line-soft); }
-.test-row summary { align-items: center; cursor: pointer; display: grid; gap: 1rem; grid-template-columns: 1.5rem minmax(0, 1fr) auto auto; list-style: none; padding: 0.9rem 1.1rem; }
+.test-row summary { align-items: center; cursor: pointer; display: grid; gap: 1rem; grid-template-columns: 1.5rem minmax(0, 1fr) auto auto 1rem; list-style: none; padding: 0.9rem 1.1rem; }
 .test-row summary::-webkit-details-marker { display: none; }
-.test-row summary::after { color: var(--text-muted); content: "›"; font-size: 1.25rem; transform: rotate(90deg); transition: transform 150ms ease; }
-.test-row[open] summary::after { transform: rotate(-90deg); }
+.test-row summary::after { display: none; }
+.chevron { color: var(--text-muted); display: inline-block; font-size: 1rem; line-height: 1; transform: rotate(-90deg); transition: transform 150ms ease; }
+.test-row[open] .chevron { transform: rotate(0); }
 .status-icon { align-items: center; border-radius: 50%; display: flex; font-size: 0.7rem; font-weight: 800; height: 1.35rem; justify-content: center; width: 1.35rem; }
 .status-icon.passed { background: var(--success-soft); color: var(--success); }
 .status-icon.failed { background: var(--danger-soft); color: var(--danger); }
@@ -236,8 +237,8 @@ button, input { margin: 0; }
   .summary { grid-template-columns: repeat(2, 1fr); }
   .operator-controls form { grid-template-columns: 1fr; }
   .operator-controls button { width: 100%; }
-  .test-row summary { gap: 0.65rem; grid-template-columns: 1.35rem minmax(0, 1fr) auto; }
-  .test-row summary::after, .duration { display: none; }
+  .test-row summary { gap: 0.65rem; grid-template-columns: 1.35rem minmax(0, 1fr) auto 1rem; }
+  .duration { display: none; }
   .test-details { padding-left: 1rem; }
   .log-row { gap: 0.35rem 0.65rem; grid-template-columns: 5.5rem 3rem 1fr; }
   .log-message { grid-column: 1 / -1; padding-bottom: 0.3rem; }

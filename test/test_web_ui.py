@@ -93,6 +93,9 @@ def test_web_page_serves_packaged_ui_and_pico_css():
 
     assert b"PyProdTest" in client.get("/").data
     assert b"--pico-font-family" in client.get("/assets/pico.min.css").data
+    script = client.get("/static/app.js").data
+    assert b"No logs captured for this test." in script
+    assert b'class="chevron"' in script
 
 
 def test_final_state_is_available_before_server_shutdown():

@@ -78,9 +78,10 @@ function renderBadge(outcome) {
   return `<span class="badge badge-${status}">${escapeHtml(status)}</span>`;
 }
 
-function renderLogRows(logs) {
+function renderLogRows(logs, { live = false } = {}) {
   if (!logs.length) {
-    return '<li class="empty-log">Waiting for log output…</li>';
+    const message = live ? "Waiting for log output…" : "No logs captured for this test.";
+    return `<li class="empty-log">${message}</li>`;
   }
 
   return logs
@@ -139,7 +140,7 @@ function renderActiveTest(test) {
       ${renderTestContext(test)}
       <section class="log-console" aria-label="Live logs">
         <div class="log-header"><span>Live output</span><span class="log-count">${test.logs.length}</span></div>
-        <ul class="log-stream">${renderLogRows(test.logs)}</ul>
+        <ul class="log-stream">${renderLogRows(test.logs, { live: true })}</ul>
       </section>
     </div>
   </article>`;
@@ -170,6 +171,7 @@ function renderTestRow(test) {
       </span>
       <span class="duration">${formatDuration(test.duration)}</span>
       ${renderBadge(status)}
+      <span class="chevron" aria-hidden="true">⌄</span>
     </summary>
     <div class="test-details">
       <div class="test-meta"><code>${escapeHtml(test.nodeid)}</code></div>
