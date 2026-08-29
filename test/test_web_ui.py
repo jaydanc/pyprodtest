@@ -1,4 +1,7 @@
 import threading
+from unittest.mock import patch
+
+import pytest
 
 from _pyprodtest.test_record import CapturedLog, TestRecord
 from _pyprodtest.web_ui.app import create_app
@@ -42,6 +45,16 @@ def test_web_input_acceptor_blocks_until_valid_http_response():
     worker.join(timeout=1)
 
     assert result == [True]
+
+
+def test_interrupted_web_input_clears_the_active_prompt():
+    state = LiveState()
+
+    with patch.object(state._input_ready, "wait", side_effect=KeyboardInterrupt):
+        with pytest.raises(KeyboardInterrupt):
+            WebInputAcceptor(state).accept("Continue?", bool)
+
+    assert state.snapshot()["input_request"] is None
 
 
 def test_web_page_serves_packaged_ui_and_pico_css():

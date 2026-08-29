@@ -6,6 +6,8 @@ from uuid import uuid4
 
 from _pyprodtest.test_record import TestRecord
 
+INPUT_WAIT_INTERVAL_SECONDS = 0.1
+
 
 @dataclass(frozen=True)
 class InputRequest:
@@ -69,12 +71,16 @@ class LiveState:
                 input_type="bool" if input_type is bool else "str",
             )
             self._input_response = None
-            while self._input_response is None:
-                self._input_ready.wait()
-            response = self._input_response
-            self._input_request = None
-            self._input_response = None
-            return response
+            try:
+                while self._input_response is None:
+                    # A bounded wait lets the main pytest thread process Ctrl+C,
+                    # including on platforms where an indefinite lock wait is not
+                    # signal-interruptible.
+                    self._input_ready.wait(INPUT_WAIT_INTERVAL_SECONDS)
+                return self._input_response
+            finally:
+                self._input_request = None
+                self._input_response = None
 
     def respond(self, request_id: str, value: object) -> bool:
         with self._input_ready:

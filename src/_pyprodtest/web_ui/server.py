@@ -1,5 +1,6 @@
 """Lifecycle wrapper for the live web server."""
 
+import logging
 import threading
 import webbrowser
 
@@ -24,6 +25,8 @@ class WebUi:
         )
         self.port = self._server.server_port
         self._thread: threading.Thread | None = None
+        self._werkzeug_logger = logging.getLogger("werkzeug")
+        self._werkzeug_log_level = self._werkzeug_logger.level
 
     @property
     def url(self) -> str:
@@ -31,6 +34,8 @@ class WebUi:
         return f"http://{display_host}:{self.port}/"
 
     def start(self, *, open_browser: bool = False) -> None:
+        if self._werkzeug_log_level < logging.WARNING:
+            self._werkzeug_logger.setLevel(logging.WARNING)
         self._thread = threading.Thread(
             target=self._server.serve_forever,
             name="pyprodtest-web-ui",
@@ -48,7 +53,10 @@ class WebUi:
 
     def stop(self) -> None:
         """Stop the background server immediately."""
-        self._server.shutdown()
-        if self._thread is not None:
-            self._thread.join(timeout=5)
-        self._server.server_close()
+        try:
+            self._server.shutdown()
+            if self._thread is not None:
+                self._thread.join(timeout=5)
+            self._server.server_close()
+        finally:
+            self._werkzeug_logger.setLevel(self._werkzeug_log_level)

@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 
 import pytest
 
@@ -20,6 +21,7 @@ def test_one():
 def test_inputs(input, device):
     logging.info("Device is %s", device)
     logging.info("Device is %s", device)
+    sleep(5)  # Simulate a long-running test
     assert input("Enter SN-1234 for the serial number").lower() == "sn-1234"
     assert input("Is the status light green? Answer yes", bool) is True
 
