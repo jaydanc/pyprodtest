@@ -1,7 +1,7 @@
-# Production tests operators can run, using tools developers already know
+# Unphased
 
-PyProdTest brings operator prompts, an always-current browser view, explicit
-test order, and durable reports to pytest—without creating a second test
+PyProdTest brings operator prompts, a live web view, charts,
+and detailed reports to pytest—without enforcing a cumbersome
 framework.
 
 [Get started](getting-started.md){ .md-button .md-button--primary }

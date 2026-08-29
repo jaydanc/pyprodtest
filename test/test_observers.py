@@ -160,6 +160,26 @@ def test_pdf_observer_writes_report_with_test_content(tmp_path: Path):
                 outcome="passed",
                 duration=0.25,
                 logs=[CapturedLog("now", "INFO", "instrument", "Measured 5V")],
+                measurements=[
+                    MeasurementSeries(
+                        name="Voltage over time",
+                        x_axis="time",
+                        points=[
+                            MeasurementPoint("2026-08-29T12:00:00Z", 4.9),
+                            MeasurementPoint("2026-08-29T12:00:01Z", 5.0),
+                            MeasurementPoint("2026-08-29T12:00:02Z", 5.1),
+                        ],
+                    ),
+                    MeasurementSeries(
+                        name="Calibration",
+                        x_axis="linear",
+                        points=[
+                            MeasurementPoint(0.0, 0.01),
+                            MeasurementPoint(128.0, 2.5),
+                            MeasurementPoint(255.0, 5.0),
+                        ],
+                    ),
+                ],
             )
         ]
     )

@@ -7,7 +7,8 @@ data.
 
 HTML reports display each named measurement series as a chart. JSON reports
 preserve measurements as nested series and points. CSV reports store the same
-structure as JSON in the `measurements` column so no points are lost.
+structure as JSON in the `measurements` column so no points are lost. PDF
+reports include compact vector charts for each measurement series.
 
 ## Choose formats and destination
 
