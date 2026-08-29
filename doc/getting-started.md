@@ -16,7 +16,7 @@ uv add pyprodtest
 To try the latest experimental build instead:
 
 ```powershell
-uv add "pyprodtest @ git+https://github.com/jaydanc/pyprodtest.git"
+uv add "pyprodtest @ git+https://github.com/jaydanc/pyprodtest.git@develop"
 ```
 
 `uv add` records the dependency, updates the lockfile, and installs it into the
