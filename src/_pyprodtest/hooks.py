@@ -81,7 +81,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     group = parser.getgroup("pyprodtest")
     group.addoption(
         "--pyprodtest-html",
-        metavar="PATH",
+        default="pyprodtest-report.html",
         help="Write a live HTML test report to PATH.",
     )
     group.addoption(

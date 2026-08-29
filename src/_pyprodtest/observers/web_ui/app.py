@@ -7,6 +7,7 @@ from flask import Flask, Response, jsonify, render_template, request
 from _pyprodtest.observers.web_ui.state import LiveState
 
 PICO_CSS = Path(__file__).parents[2] / "web_assets" / "pico.min.css"
+THEME_CSS = Path(__file__).parents[2] / "web_assets" / "theme.css"
 
 
 def create_app(state: LiveState) -> Flask:
@@ -21,6 +22,10 @@ def create_app(state: LiveState) -> Flask:
     @app.get("/assets/pico.min.css")
     def pico_css() -> Response:
         return Response(PICO_CSS.read_bytes(), mimetype="text/css")
+
+    @app.get("/assets/theme.css")
+    def theme_css() -> Response:
+        return Response(THEME_CSS.read_bytes(), mimetype="text/css")
 
     @app.get("/api/state")
     def get_state() -> Response:
