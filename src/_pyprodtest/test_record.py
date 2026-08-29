@@ -1,10 +1,13 @@
 """
 Data structure to hold test metadata.
 """
+
+
 class TestRecord:
     """
     Represents a test record
     """
+
     def __init__(self, name, description, requirements, steps):
         self.name = name
         self.description = description

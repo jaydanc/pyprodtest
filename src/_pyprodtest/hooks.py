@@ -1,6 +1,7 @@
 """
 Pytest plugin hooks for capturing test results and artifacts.
 """
+
 import logging
 
 from _pyprodtest.test_record import TestRecord
@@ -8,12 +9,15 @@ from _pyprodtest.test_record import TestRecord
 _observers = []
 messages = []
 
+
 class ListHandler(logging.Handler):
     """
     Temp logging handler to capture log messages in a list.
     """
+
     def emit(self, record):
         messages.append(self.format(record))
+
 
 def pytest_configure():
     """
@@ -27,6 +31,7 @@ def pytest_configure():
     logging.getLogger().addHandler(handler)
     logging.getLogger().setLevel(logging.DEBUG)
     logging.debug("Pyprodtest configuration complete.")
+
 
 def pytest_report_collectionfinish(items):
     """
@@ -45,7 +50,7 @@ def pytest_report_collectionfinish(items):
             name=test_name,
             description=test_desc,
             requirements=test_reqs,
-            steps=test_steps
+            steps=test_steps,
         )
 
         test_records.append(test_record)
@@ -57,8 +62,9 @@ def pytest_runtest_setup(item):
     """
     Hook to execute before each test setup.
     """
-    
+
     logging.debug(item.nodeid)
+
 
 def pytest_runtest_call(item):
     """
@@ -67,6 +73,7 @@ def pytest_runtest_call(item):
     # Custom logic before test execution
     logging.debug("Called")
 
+
 def pytest_runtest_teardown(item, nextitem):
     """
     Hook to execute after each test teardown.
@@ -74,11 +81,13 @@ def pytest_runtest_teardown(item, nextitem):
     # Custom logic after test teardown
     pass
 
+
 def pytest_runtest_logreport(report):
     """
     Hook to execute when a test report is generated.
     """
     pass
+
 
 def pytest_terminal_summary(terminalreporter, config):
     """

@@ -1,10 +1,8 @@
 """
 PyProdTest Public API
 """
-from _pyprodtest.decorator import info
-from _pyprodtest.decorator import req
-from _pyprodtest.decorator import step
 
+from _pyprodtest.decorator import info, req, step
 
 __all__ = [
     "info",

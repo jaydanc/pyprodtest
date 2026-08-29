@@ -4,5 +4,67 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"extensions": {
+		"recommendations": [
+			"charliermarsh.ruff",
+			"ms-python.python",
+			"ms-python.vscode-pylance"
+		]
+	},
+	"settings": {
+		"[python]": {
+			"editor.defaultFormatter": "charliermarsh.ruff",
+			"editor.formatOnSave": true,
+			"editor.codeActionsOnSave": {
+				"source.fixAll.ruff": "explicit",
+				"source.organizeImports.ruff": "explicit"
+			}
+		},
+		"python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+		"python.testing.pytestArgs": [
+			"-p",
+			"pyprodtest"
+		],
+		"python.testing.pytestEnabled": true,
+		"python.testing.unittestEnabled": false
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "Ruff: Format check",
+				"type": "process",
+				"command": "uv",
+				"args": ["run", "ruff", "format", "--check", "."],
+				"problemMatcher": []
+			},
+			{
+				"label": "Ruff: Check",
+				"type": "process",
+				"command": "uv",
+				"args": ["run", "ruff", "check", "."],
+				"problemMatcher": []
+			},
+			{
+				"label": "Pytest",
+				"type": "process",
+				"command": "uv",
+				"args": ["run", "pytest", "-p", "pyprodtest"],
+				"problemMatcher": []
+			},
+			{
+				"label": "Verify: Ruff and pytest",
+				"dependsOrder": "sequence",
+				"dependsOn": [
+					"Ruff: Format check",
+					"Ruff: Check",
+					"Pytest"
+				],
+				"group": {
+					"kind": "test",
+					"isDefault": true
+				}
+			}
+		]
+	}
 }
