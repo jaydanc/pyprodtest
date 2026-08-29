@@ -15,6 +15,7 @@ const elements = {
 let renderedActiveTest = null;
 let renderedInputId = null;
 let renderedTestList = null;
+const charts = new Map();
 
 function escapeHtml(value) {
   const entities = {
@@ -112,6 +113,53 @@ function renderTestContext(test) {
   </aside>`;
 }
 
+function measurementMarkup(measurements, scope) {
+  if (!measurements.length) return "";
+  return `<section class="measurements" aria-label="Measured data">
+    <div class="measurement-heading"><span>Measured data</span><span>${measurements.length} ${measurements.length === 1 ? "series" : "series"}</span></div>
+    <div class="measurement-grid">${measurements.map((series, index) => {
+      const latest = series.points.at(-1);
+      return `<article class="measurement-card">
+        <div class="measurement-summary">
+          <div><span class="measurement-name">${escapeHtml(series.name)}</span><small>${series.x_axis === "time" ? "Live time series" : "X / Y plot"}</small></div>
+          <div class="measurement-latest"><strong>${latest ? escapeHtml(latest.y) : "—"}</strong><small>Latest</small></div>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-${scope}-${index}" aria-label="${escapeHtml(series.name)} chart" role="img"></canvas></div>
+      </article>`;
+    }).join("")}</div>
+  </section>`;
+}
+
+function renderCharts(measurements, scope) {
+  if (typeof Chart === "undefined") return;
+  measurements.forEach((series, index) => {
+    const id = `chart-${scope}-${index}`;
+    charts.get(id)?.destroy();
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const isTime = series.x_axis === "time";
+    const labels = isTime ? series.points.map((point) => formatTime(point.x)) : undefined;
+    const data = isTime
+      ? series.points.map((point) => point.y)
+      : series.points.map((point) => ({ x: point.x, y: point.y }));
+    charts.set(id, new Chart(canvas, {
+      type: "line",
+      data: { labels, datasets: [{ data, borderColor: "#2eb8ff", backgroundColor: "rgba(46, 184, 255, 0.12)", borderWidth: 2, pointRadius: data.length > 40 ? 0 : 2.5, pointHoverRadius: 4, fill: true, tension: 0.22 }] },
+      options: {
+        animation: false,
+        maintainAspectRatio: false,
+        parsing: isTime,
+        normalized: true,
+        plugins: { legend: { display: false }, tooltip: { displayColors: false } },
+        scales: {
+          x: { type: isTime ? "category" : "linear", grid: { color: "rgba(158, 176, 195, 0.08)" }, ticks: { color: "#6f8297", maxTicksLimit: 7 } },
+          y: { grid: { color: "rgba(158, 176, 195, 0.08)" }, ticks: { color: "#6f8297", maxTicksLimit: 6 } },
+        },
+      },
+    }));
+  });
+}
+
 function renderActiveTest(test) {
   const serializedTest = JSON.stringify(test);
   if (serializedTest === renderedActiveTest) return;
@@ -143,10 +191,12 @@ function renderActiveTest(test) {
         <ul class="log-stream">${renderLogRows(test.logs, { live: true })}</ul>
       </section>
     </div>
+    ${measurementMarkup(test.measurements, "active")}
   </article>`;
 
   const logStream = elements.activeTest.querySelector(".log-stream");
   logStream.scrollTop = logStream.scrollHeight;
+  renderCharts(test.measurements, "active");
 }
 
 function renderFailure(test) {
@@ -177,6 +227,7 @@ function renderTestRow(test) {
       <div class="test-meta"><code>${escapeHtml(test.nodeid)}</code></div>
       <div class="log-header"><span>Captured logs</span><span class="log-count">${test.logs.length}</span></div>
       <ul class="log-stream">${renderLogRows(test.logs)}</ul>
+      ${measurementMarkup(test.measurements, `test-${test.nodeid.replace(/[^a-z0-9]/gi, "-")}`)}
       ${renderFailure(test)}
     </div>
   </details>`;
@@ -191,6 +242,7 @@ function renderTestList(tests) {
   elements.tests.innerHTML = tests.length
     ? tests.map(renderTestRow).join("")
     : '<div class="empty-state">No other tests collected.</div>';
+  tests.forEach((test) => renderCharts(test.measurements, `test-${test.nodeid.replace(/[^a-z0-9]/gi, "-")}`));
 }
 
 async function submitInput(requestId, value) {

@@ -7,7 +7,12 @@ from _pyprodtest.observers.web_ui.app import create_app
 from _pyprodtest.observers.web_ui.input_acceptor import WebInputAcceptor
 from _pyprodtest.observers.web_ui.observer import WebObserver
 from _pyprodtest.observers.web_ui.state import LiveState
-from _pyprodtest.test_record import CapturedLog, TestRecord
+from _pyprodtest.test_record import (
+    CapturedLog,
+    MeasurementPoint,
+    MeasurementSeries,
+    TestRecord,
+)
 
 
 def test_web_observer_exposes_live_record_updates():
@@ -98,6 +103,40 @@ def test_web_page_serves_packaged_ui_and_pico_css():
     assert b"No logs captured for this test." in script
     assert b'class="chevron"' in script
     assert b'elements.inputPanel.removeAttribute("aria-busy")' in script
+    assert b"new Chart(canvas" in script
+    assert b"series.points.map((point) => point.y)" in script
+    assert b"chart.js@4.4.7" in client.get("/").data
+
+
+def test_live_state_serializes_measurement_series_for_the_chart():
+    state = LiveState()
+    state.set_records(
+        [
+            TestRecord(
+                name="Voltage",
+                measurements=[
+                    MeasurementSeries(
+                        name="Output voltage",
+                        x_axis="time",
+                        points=[MeasurementPoint(x="2026-08-29T12:00:00Z", y=5.02)],
+                    )
+                ],
+            )
+        ]
+    )
+
+    measurement = (
+        create_app(state)
+        .test_client()
+        .get("/api/state")
+        .get_json()["tests"][0]["measurements"][0]
+    )
+
+    assert measurement == {
+        "name": "Output voltage",
+        "x_axis": "time",
+        "points": [{"x": "2026-08-29T12:00:00Z", "y": 5.02}],
+    }
 
 
 def test_web_page_uses_configured_name_in_heading_and_browser_title():

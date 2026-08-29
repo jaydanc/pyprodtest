@@ -10,6 +10,7 @@ import pytest
 
 from _pyprodtest.config import PyProdTestConfig, apply_test_plan, load_config
 from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor, TestInput
+from _pyprodtest.measure import Measure
 from _pyprodtest.observers import (
     CsvObserver,
     HtmlObserver,
@@ -81,6 +82,21 @@ def input(request: pytest.FixtureRequest) -> TestInput:
             capture_manager.resume()
 
     return accept
+
+
+@pytest.fixture
+def measure(request: pytest.FixtureRequest) -> Measure:
+    """Record numeric data for the current test and live operator UI."""
+    if _state is None:
+        raise RuntimeError("PyProdTest is not configured")
+
+    def get_record() -> TestRecord:
+        record = _state.records.get(request.node.nodeid)
+        if record is None:
+            raise RuntimeError("The current test has no PyProdTest record")
+        return record
+
+    return Measure(get_record)
 
 
 class TestLogHandler(logging.Handler):

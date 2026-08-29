@@ -14,6 +14,7 @@ reports:
 
 # Tests are executed in the order they appear
 tests:
+  - test/integration/chart_test.py
   - test/integration/serial_test.py
   - test/integration/status_light_test.py
   - test/integration/diagnostics_test.py

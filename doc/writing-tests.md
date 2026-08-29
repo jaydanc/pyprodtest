@@ -45,6 +45,27 @@ With the web UI enabled, the prompt appears in the browser. With it disabled,
 the console accepts `y`, `yes`, `n`, or `no`. The fixture blocks the current
 test until the operator responds.
 
+## Stream measured data
+
+Call the `measure` fixture to record a value against the current timestamp:
+
+```python
+def test_output_voltage(device, measure) -> None:
+    for _ in range(20):
+        voltage = device.output_voltage()
+        measure(voltage, "Voltage")
+```
+
+The operator console shows the latest value and updates its Chart.js time-series
+chart while the test runs. For data where X is not time, create an explicit plot:
+
+```python
+def test_calibration(device, measure) -> None:
+    calibration = measure.plot("Calibration")
+    for dac_value in range(10):
+        calibration.add(dac_value, device.output_voltage())
+```
+
 ## Capture diagnostics
 
 Use standard Python logging:
