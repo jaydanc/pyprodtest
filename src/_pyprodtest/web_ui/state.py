@@ -35,6 +35,14 @@ class LiveState:
         with self._lock:
             self._records = records
 
+    def promote(self, record: TestRecord) -> None:
+        """Move the active record ahead of completed and pending tests."""
+        with self._lock:
+            for index, existing_record in enumerate(self._records):
+                if existing_record is record:
+                    self._records.insert(0, self._records.pop(index))
+                    return
+
     def snapshot(self) -> dict[str, object]:
         with self._lock:
             snapshot = {

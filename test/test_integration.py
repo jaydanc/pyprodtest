@@ -15,6 +15,9 @@ def device():
 @info(name="Test One", desc="This is the first test")
 def test_one():
     logging.getLogger(__name__).info("Test One diagnostic value: %s", 42)
+    sleep(5)  # Simulate a long-running test
+    logging.getLogger(__name__).info("Test One diagnostic value: %s", 43)
+    sleep(5)  # Simulate a long-running test
     assert True
 
 

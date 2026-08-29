@@ -17,7 +17,7 @@ class WebObserver(TestObserver):
         self._state.set_records(list(test_records))
 
     def on_test_run(self, test_record: TestRecord) -> None:
-        pass
+        self._state.promote(test_record)
 
     def on_test_end(self, test_record: TestRecord) -> None:
         pass

@@ -5,6 +5,8 @@ main.container { padding-block: 2.5rem; }
 .summary-card { margin: 0 0 1.5rem; padding: 0.8rem; text-align: center; }
 .summary-card strong { display: block; font-size: 1.6rem; }
 .input-card { border-left: 0.35rem solid var(--pico-primary); }
+.current-test { border-top: 0.35rem solid var(--pico-primary); }
+.current-label { color: var(--pico-primary); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 0.75rem; text-transform: uppercase; }
 .test-card > header { align-items: start; display: flex; gap: 1rem; justify-content: space-between; }
 .test-card h2 { font-size: 1.15rem; margin: 0; overflow-wrap: anywhere; }
 .badge { border-radius: 999px; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.65rem; text-transform: uppercase; }

@@ -24,6 +24,37 @@ def test_web_observer_exposes_live_record_updates():
     assert test["logs"][0]["message"] == "Ready"
 
 
+def test_web_observer_promotes_each_running_test_to_the_top():
+    state = LiveState()
+    observer = WebObserver(state)
+    first = TestRecord(name="First")
+    second = TestRecord(name="Second")
+    third = TestRecord(name="Third")
+    observer.on_tests_collected([first, second, third])
+
+    first.outcome = "passed"
+    observer.on_test_end(first)
+    second.outcome = "running"
+    observer.on_test_run(second)
+
+    assert [test["name"] for test in state.snapshot()["tests"]] == [
+        "Second",
+        "First",
+        "Third",
+    ]
+
+    second.outcome = "passed"
+    observer.on_test_end(second)
+    third.outcome = "running"
+    observer.on_test_run(third)
+
+    assert [test["name"] for test in state.snapshot()["tests"]] == [
+        "Third",
+        "Second",
+        "First",
+    ]
+
+
 def test_web_input_acceptor_blocks_until_valid_http_response():
     state = LiveState()
     app = create_app(state)

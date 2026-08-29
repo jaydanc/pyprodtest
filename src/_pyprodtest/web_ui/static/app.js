@@ -59,6 +59,7 @@ function renderLogs(test) {
 }
 
 function renderTest(test) {
+  const isRunning = test.outcome === "running";
   const description = test.description
     ? `<p>${escapeHtml(test.description)}</p>`
     : "";
@@ -69,14 +70,19 @@ function renderTest(test) {
     ? `<details open><summary>Failure details</summary><pre><code>${escapeHtml(test.failure_reason)}</code></pre></details>`
     : "";
 
-  return `<article class="test-card">
+  const currentLabel = isRunning
+    ? '<div class="current-label">Currently executing</div>'
+    : "";
+
+  return `<article class="test-card ${isRunning ? "current-test" : ""}">
+    ${currentLabel}
     <header>
       <div><h2>${escapeHtml(test.name)}</h2>${description}</div>
       <span class="badge badge-${test.outcome}">${test.outcome}</span>
     </header>
     <div class="metadata">${escapeHtml(test.nodeid)} · ${test.duration.toFixed(3)}s</div>
     ${steps}
-    <details ${test.outcome === "running" ? "open" : ""}>
+    <details ${isRunning ? "open" : ""}>
       <summary>Logs (${test.logs.length})</summary>
       <ul class="log-list">${renderLogs(test)}</ul>
     </details>
