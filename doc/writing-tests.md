@@ -53,15 +53,17 @@ Call the `measure` fixture to record a value against the current timestamp:
 def test_output_voltage(device, measure) -> None:
     for _ in range(20):
         voltage = device.output_voltage()
-        measure(voltage, "Voltage")
+        measure(voltage, "Voltage", "V")
 ```
 
 The operator console shows the latest value and updates its Chart.js time-series
-chart while the test runs. For data where X is not time, create an explicit plot:
+chart while the test runs. The optional unit string is shown with the latest
+value and on the chart axis. For data where X is not time, create an explicit
+plot; its unit describes the Y values:
 
 ```python
 def test_calibration(device, measure) -> None:
-    calibration = measure.plot("Calibration")
+    calibration = measure.plot("Calibration", x_unit="DAC", y_unit="V")
     for dac_value in range(10):
         calibration.add(dac_value, device.output_voltage())
 ```

@@ -127,10 +127,15 @@
                           <div class="measurement-summary">
                             <div>
                               <span class="measurement-name">{{ series.name }}</span>
-                              <small>{{ "Time series" if series.x_axis == "time" else "X / Y plot" }}</small>
+                              <small>
+                                {{ "Time series" if series.x_axis == "time" else "X / Y plot" }}
+                                {% if series.x_axis != "time" and (series.x_unit or series.unit) %}
+                                  · {{ series.x_unit or "X" }} → {{ series.unit or "Y" }}
+                                {% endif %}
+                              </small>
                             </div>
                             <div class="measurement-latest">
-                              <strong>{{ series.points[-1].y if series.points else "—" }}</strong>
+                              <strong>{{ series.points[-1].y if series.points else "—" }}{% if series.points and series.unit %} {{ series.unit }}{% endif %}</strong>
                               <small>Latest</small>
                             </div>
                           </div>
@@ -166,6 +171,8 @@
               {
                 id: "measurement-{{ test_loop.index0 }}-{{ loop.index0 }}",
                 xAxis: {{ series.x_axis | tojson }},
+                unit: {{ series.unit | tojson }},
+                xUnit: {{ series.x_unit | tojson }},
                 points: [
                   {% for point in series.points %}{ x: {{ point.x | tojson }}, y: {{ point.y | tojson }} },{% endfor %}
                 ],
@@ -205,8 +212,8 @@
               parsing: isTime,
               plugins: { legend: { display: false }, tooltip: { displayColors: false } },
               scales: {
-                x: { type: isTime ? "category" : "linear", grid: { color: "rgba(158, 176, 195, 0.08)" }, ticks: { color: "#6f8297", maxTicksLimit: 7 } },
-                y: { grid: { color: "rgba(158, 176, 195, 0.08)" }, ticks: { color: "#6f8297", maxTicksLimit: 6 } },
+                x: { type: isTime ? "category" : "linear", grid: { color: "rgba(158, 176, 195, 0.08)" }, title: { display: !isTime && Boolean(series.xUnit), text: series.xUnit, color: "#9eb0c3" }, ticks: { color: "#6f8297", maxTicksLimit: 7 } },
+                y: { grid: { color: "rgba(158, 176, 195, 0.08)" }, title: { display: Boolean(series.unit), text: series.unit, color: "#9eb0c3" }, ticks: { color: "#6f8297", maxTicksLimit: 6 } },
               },
             },
           });

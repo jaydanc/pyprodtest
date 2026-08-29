@@ -44,6 +44,7 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
             MeasurementSeries(
                 name="Voltage <rail>",
                 x_axis="time",
+                unit="V",
                 points=[MeasurementPoint(x="2026-08-29T12:34:56.789+01:00", y=5.02)],
             )
         ],
@@ -85,6 +86,7 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
     assert "0.125s" in report
     assert "Measured data" in report
     assert "Voltage &lt;rail&gt;" in report
+    assert "5.02 V" in report
     assert "Chart.js v4.4.7" in report
     assert "cdn.jsdelivr.net" not in report
     assert "2026-08-29T12:34:56.789+01:00" in report
@@ -113,11 +115,14 @@ def test_json_and_csv_observers_preserve_test_records(tmp_path: Path):
             MeasurementSeries(
                 name="Voltage",
                 x_axis="time",
+                unit="V",
                 points=[MeasurementPoint("2026-08-29T12:00:00Z", 5.0)],
             ),
             MeasurementSeries(
                 name="Calibration",
                 x_axis="linear",
+                unit="V",
+                x_unit="DAC",
                 points=[MeasurementPoint(128.0, 2.5)],
             ),
         ],
@@ -137,6 +142,8 @@ def test_json_and_csv_observers_preserve_test_records(tmp_path: Path):
     assert json_report["tests"][0]["measurements"][1]["points"] == [
         {"x": 128.0, "y": 2.5}
     ]
+    assert json_report["tests"][0]["measurements"][0]["unit"] == "V"
+    assert json_report["tests"][0]["measurements"][1]["x_unit"] == "DAC"
 
     with (tmp_path / "results.csv").open(encoding="utf-8", newline="") as report:
         row = next(csv.DictReader(report))
@@ -146,6 +153,8 @@ def test_json_and_csv_observers_preserve_test_records(tmp_path: Path):
     measurements = json.loads(row["measurements"])
     assert [series["name"] for series in measurements] == ["Voltage", "Calibration"]
     assert measurements[0]["points"][0]["y"] == 5.0
+    assert measurements[0]["unit"] == "V"
+    assert measurements[1]["x_unit"] == "DAC"
 
 
 def test_pdf_observer_writes_report_with_test_content(tmp_path: Path):
@@ -165,6 +174,7 @@ def test_pdf_observer_writes_report_with_test_content(tmp_path: Path):
                     MeasurementSeries(
                         name="Voltage over time",
                         x_axis="time",
+                        unit="V",
                         points=[
                             MeasurementPoint("2026-08-29T12:00:00Z", 4.9),
                             MeasurementPoint("2026-08-29T12:00:01Z", 5.0),
@@ -174,6 +184,8 @@ def test_pdf_observer_writes_report_with_test_content(tmp_path: Path):
                     MeasurementSeries(
                         name="Calibration",
                         x_axis="linear",
+                        unit="V",
+                        x_unit="DAC",
                         points=[
                             MeasurementPoint(0.0, 0.01),
                             MeasurementPoint(128.0, 2.5),

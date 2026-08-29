@@ -21,6 +21,8 @@ class MeasurementSeries:
 
     name: str
     x_axis: str
+    unit: str = ""
+    x_unit: str = ""
     points: list[MeasurementPoint] = field(default_factory=list)
 
 

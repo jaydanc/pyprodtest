@@ -58,17 +58,40 @@ def measurement_chart(series: MeasurementSeries) -> Drawing:
         plot_height,
     )
     _add_x_labels(drawing, series, x_values, left, plot_width)
+    if series.x_axis != "time" and series.x_unit:
+        drawing.add(
+            String(
+                left + plot_width / 2,
+                3.5 * mm,
+                series.x_unit,
+                textAnchor="middle",
+                fontName="Helvetica-Bold",
+                fontSize=6.5,
+                fillColor=colors.HexColor("#475569"),
+            )
+        )
     drawing.add(
         String(
             left + plot_width,
             height - 5 * mm,
-            f"Latest: {_axis_label(y_values[-1])}",
+            f"Latest: {_value_label(y_values[-1], series.unit)}",
             textAnchor="end",
             fontName="Helvetica-Bold",
             fontSize=7.5,
             fillColor=colors.HexColor("#0369a1"),
         )
     )
+    if series.unit:
+        drawing.add(
+            String(
+                left,
+                height - 5 * mm,
+                series.unit,
+                fontName="Helvetica-Bold",
+                fontSize=7.5,
+                fillColor=colors.HexColor("#475569"),
+            )
+        )
     return drawing
 
 
@@ -200,6 +223,11 @@ def _axis_bounds(values: list[float]) -> tuple[float, float]:
 
 def _axis_label(value: float) -> str:
     return f"{value:.4g}"
+
+
+def _value_label(value: float, unit: str) -> str:
+    value_label = _axis_label(value)
+    return f"{value_label} {unit}" if unit else value_label
 
 
 def _x_labels(series: MeasurementSeries, x_values: list[float]) -> tuple[str, str]:

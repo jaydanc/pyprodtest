@@ -121,8 +121,8 @@ function measurementMarkup(measurements, scope) {
       const latest = series.points.at(-1);
       return `<article class="measurement-card">
         <div class="measurement-summary">
-          <div><span class="measurement-name">${escapeHtml(series.name)}</span><small>${series.x_axis === "time" ? "Live time series" : "X / Y plot"}</small></div>
-          <div class="measurement-latest"><strong>${latest ? escapeHtml(latest.y) : "—"}</strong><small>Latest</small></div>
+          <div><span class="measurement-name">${escapeHtml(series.name)}</span><small>${series.x_axis === "time" ? "Live time series" : `X / Y plot${series.x_unit || series.unit ? ` · ${escapeHtml(series.x_unit || "X")} → ${escapeHtml(series.unit || "Y")}` : ""}`}</small></div>
+          <div class="measurement-latest"><strong>${latest ? `${escapeHtml(latest.y)}${series.unit ? ` ${escapeHtml(series.unit)}` : ""}` : "—"}</strong><small>Latest</small></div>
         </div>
         <div class="chart-wrap"><canvas id="chart-${scope}-${index}" aria-label="${escapeHtml(series.name)} chart" role="img"></canvas></div>
       </article>`;
@@ -152,8 +152,8 @@ function renderCharts(measurements, scope) {
         normalized: true,
         plugins: { legend: { display: false }, tooltip: { displayColors: false } },
         scales: {
-          x: { type: isTime ? "category" : "linear", grid: { color: "rgba(158, 176, 195, 0.08)" }, ticks: { color: "#6f8297", maxTicksLimit: 7 } },
-          y: { grid: { color: "rgba(158, 176, 195, 0.08)" }, ticks: { color: "#6f8297", maxTicksLimit: 6 } },
+          x: { type: isTime ? "category" : "linear", grid: { color: "rgba(158, 176, 195, 0.08)" }, title: { display: !isTime && Boolean(series.x_unit), text: series.x_unit, color: "#9eb0c3" }, ticks: { color: "#6f8297", maxTicksLimit: 7 } },
+          y: { grid: { color: "rgba(158, 176, 195, 0.08)" }, title: { display: Boolean(series.unit), text: series.unit, color: "#9eb0c3" }, ticks: { color: "#6f8297", maxTicksLimit: 6 } },
         },
       },
     }));

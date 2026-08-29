@@ -105,6 +105,8 @@ def test_web_page_serves_packaged_ui_and_pico_css():
     assert b'elements.inputPanel.removeAttribute("aria-busy")' in script
     assert b"new Chart(canvas" in script
     assert b"series.points.map((point) => point.y)" in script
+    assert b"Boolean(series.unit)" in script
+    assert b"Boolean(series.x_unit)" in script
     assert b"/assets/chart.umd.min.js" in client.get("/").data
     chart_js = client.get("/assets/chart.umd.min.js")
     assert chart_js.mimetype == "application/javascript"
@@ -121,6 +123,8 @@ def test_live_state_serializes_measurement_series_for_the_chart():
                     MeasurementSeries(
                         name="Output voltage",
                         x_axis="time",
+                        unit="V",
+                        x_unit="",
                         points=[MeasurementPoint(x="2026-08-29T12:00:00Z", y=5.02)],
                     )
                 ],
@@ -138,6 +142,8 @@ def test_live_state_serializes_measurement_series_for_the_chart():
     assert measurement == {
         "name": "Output voltage",
         "x_axis": "time",
+        "unit": "V",
+        "x_unit": "",
         "points": [{"x": "2026-08-29T12:00:00Z", "y": 5.02}],
     }
 

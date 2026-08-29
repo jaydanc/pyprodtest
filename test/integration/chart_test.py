@@ -17,7 +17,7 @@ def test_chart(input, report, device: Device, measure) -> None:
             base_val -= 1
 
         logging.info(f"Angle {base_val}")
-        measure(base_val, "Angle")
+        measure(base_val, "Angle", "deg")
         time.sleep(1)
 
     for i in range(5):
@@ -28,10 +28,10 @@ def test_chart(input, report, device: Device, measure) -> None:
             base_val -= 1
 
         logging.info(f"Temperature {base_val}")
-        measure(base_val, "Temperature")
+        measure(base_val, "Temperature", "deg C")
         time.sleep(1)
 
-    plot = measure.plot("Temperature/Angle")
+    plot = measure.plot("Temperature/Angle", x_unit="deg C", y_unit="deg")
     temperature = 21
     angle = 30
     for i in range(10):
