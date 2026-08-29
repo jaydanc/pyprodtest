@@ -9,14 +9,44 @@
     <script defer src="{{ url_for('static', filename='app.js') }}"></script>
   </head>
   <body>
-    <main class="container">
-      <header class="page-header">
-        <hgroup><h1>PyProdTest</h1><p>Live test execution</p></hgroup>
-        <small id="connection" aria-live="polite">Connecting…</small>
-      </header>
-      <section id="input-panel" hidden aria-live="assertive"></section>
-      <section id="summary" class="grid summary-grid" aria-label="Run summary"></section>
-      <section id="tests" aria-label="Tests"><article aria-busy="true">Waiting for collection…</article></section>
+    <header class="app-header">
+      <div class="shell header-content">
+        <a class="brand" href="/" aria-label="PyProdTest home">
+          <span class="brand-mark" aria-hidden="true">P</span>
+          <span><strong>PyProdTest</strong><small>Operator console</small></span>
+        </a>
+        <div id="connection" class="connection connection-waiting" aria-live="polite">
+          <span class="connection-dot"></span><span>Connecting</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="shell workspace">
+      <section class="run-overview" aria-labelledby="run-title">
+        <div class="section-heading overview-heading">
+          <div><span class="eyebrow">Test run</span><h1 id="run-title">Production test execution</h1></div>
+          <div id="summary" class="summary" aria-label="Run summary"></div>
+        </div>
+        <div class="progress-track" aria-label="Test progress"><span id="progress-bar"></span></div>
+      </section>
+
+      <section id="input-panel" class="operator-panel" hidden aria-live="assertive"></section>
+
+      <section id="active-section" hidden aria-labelledby="active-title">
+        <div class="section-heading">
+          <div><span class="eyebrow active-eyebrow">In progress</span><h2 id="active-title">Current test</h2></div>
+          <span class="live-indicator"><span></span>Live</span>
+        </div>
+        <div id="active-test"></div>
+      </section>
+
+      <section class="test-list-section" aria-labelledby="test-list-title">
+        <div class="section-heading">
+          <div><span class="eyebrow">Run details</span><h2 id="test-list-title">Tests</h2></div>
+          <span id="test-list-count" class="muted-count"></span>
+        </div>
+        <div id="tests" class="test-list"><div class="empty-state" aria-busy="true">Waiting for collection…</div></div>
+      </section>
     </main>
   </body>
 </html>

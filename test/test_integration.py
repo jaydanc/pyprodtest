@@ -21,6 +21,10 @@ def test_one():
     assert True
 
 
+@info(name="Input Test", desc="This is the second test")
+@req("REQ-1234", "REQ-5678")
+@step("Ask for serial")
+@step("Ask for status light")
 def test_inputs(input, device):
     logging.info("Device is %s", device)
     logging.info("Device is %s", device)
