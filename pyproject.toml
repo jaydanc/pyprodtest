@@ -1,6 +1,6 @@
 [project]
 name = "pyprodtest"
-version = "0.1.1"
+version = "0.2.0"
 description = "Pytest plugin for production testing"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -50,7 +50,7 @@ select = ["E4", "E7", "E9", "F", "I"]
 
 [tool.setuptools.package-data]
 "_pyprodtest.observers.html_report" = ["templates/*.html"]
-"_pyprodtest.web_assets" = ["*.css"]
+"_pyprodtest.web_assets" = ["*.css", "*.js"]
 "_pyprodtest.observers.web_ui" = ["templates/*.html", "static/*.js"]
 
 [tool.setuptools.packages.find]

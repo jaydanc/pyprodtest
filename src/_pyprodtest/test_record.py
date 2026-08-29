@@ -8,6 +8,25 @@ from datetime import datetime
 
 
 @dataclass(frozen=True)
+class MeasurementPoint:
+    """One numeric point in a measured series."""
+
+    x: str | float
+    y: float
+
+
+@dataclass
+class MeasurementSeries:
+    """A named set of timestamped or explicit X/Y measurements."""
+
+    name: str
+    x_axis: str
+    unit: str = ""
+    x_unit: str = ""
+    points: list[MeasurementPoint] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class CapturedLog:
     """One log entry emitted while a test was active."""
 
@@ -43,3 +62,4 @@ class TestRecord:
     duration: float = 0.0
     failure_reason: str = ""
     logs: list[CapturedLog] = field(default_factory=list)
+    measurements: list[MeasurementSeries] = field(default_factory=list)

@@ -188,6 +188,18 @@ button, input { margin: 0; }
 .log-message { color: #cbd8e6; overflow-wrap: anywhere; white-space: pre-wrap; }
 .empty-log { color: var(--text-muted); padding: 2.5rem 0; text-align: center; }
 
+.measurements { border-top: 1px solid var(--line); padding: 1.2rem 1.4rem 1.4rem; }
+.measurement-heading { color: var(--text-muted); display: flex; font-size: 0.68rem; font-weight: 700; justify-content: space-between; letter-spacing: 0.1em; margin-bottom: 0.8rem; text-transform: uppercase; }
+.measurement-grid { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+.measurement-card { background: #0a1017; border: 1px solid var(--line-soft); border-radius: 0.6rem; margin: 0; min-width: 0; padding: 0.9rem 1rem 0.7rem; }
+.measurement-summary { align-items: start; display: flex; gap: 1rem; justify-content: space-between; }
+.measurement-name { color: var(--text); display: block; font-size: 0.82rem; font-weight: 700; }
+.measurement-summary small { color: var(--text-muted); display: block; font-size: 0.65rem; margin-top: 0.15rem; }
+.measurement-latest { text-align: right; }
+.measurement-latest strong { color: var(--accent); display: block; font: 1.15rem var(--pico-font-family-monospace); }
+.chart-wrap { height: 12rem; margin-top: 0.65rem; position: relative; }
+.test-details .measurements { border: 0; margin-top: 1rem; padding: 0; }
+
 .test-list-section { margin-top: 1rem; }
 .muted-count { color: var(--text-muted); font-size: 0.75rem; }
 .test-list { background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--radius); overflow: hidden; }

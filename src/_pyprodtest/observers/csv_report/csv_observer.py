@@ -19,6 +19,7 @@ FIELDNAMES = (
     "steps",
     "failure_reason",
     "logs",
+    "measurements",
 )
 
 
@@ -62,6 +63,10 @@ class CsvObserver(TestObserver):
                         "failure_reason": record.failure_reason,
                         "logs": json.dumps(
                             [asdict(log) for log in record.logs], ensure_ascii=False
+                        ),
+                        "measurements": json.dumps(
+                            [asdict(series) for series in record.measurements],
+                            ensure_ascii=False,
                         ),
                     }
                 )
