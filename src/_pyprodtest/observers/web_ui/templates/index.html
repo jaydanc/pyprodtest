@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PyProdTest live</title>
+    <title>{{ name }} · PyProdTest</title>
     <link rel="stylesheet" href="/assets/pico.min.css">
     <link rel="stylesheet" href="/assets/theme.css">
     <script defer src="{{ url_for('static', filename='app.js') }}"></script>
@@ -24,7 +24,7 @@
     <main class="shell workspace">
       <section class="run-overview" aria-labelledby="run-title">
         <div class="section-heading overview-heading">
-          <div><span class="eyebrow">Test run</span><h1 id="run-title">Production test execution</h1></div>
+          <div><span class="eyebrow">Test run</span><h1 id="run-title">{{ name }}</h1></div>
           <div id="summary" class="summary" aria-label="Run summary"></div>
         </div>
         <div class="progress-track" aria-label="Test progress"><span id="progress-bar"></span></div>

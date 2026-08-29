@@ -17,13 +17,18 @@ EXISTING_BROWSER_WAIT_SECONDS = 0.75
 class WebUi:
     """Compose the observer, input provider, and background HTTP server."""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 8765) -> None:
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 8765,
+        name: str = "Production test execution",
+    ) -> None:
         self.host = host
         self.state = LiveState()
         self.observer = WebObserver(self.state)
         self.input_acceptor = WebInputAcceptor(self.state)
         self._server: BaseWSGIServer = make_server(
-            host, port, create_app(self.state), threaded=True
+            host, port, create_app(self.state, name), threaded=True
         )
         self.port = self._server.server_port
         self._thread: threading.Thread | None = None

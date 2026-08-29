@@ -11,13 +11,17 @@ uv run ruff format --check .
 uv run ruff check .
 uv run pytest -p pyprodtest
 
-PyProdTest always writes HTML, JSON, and CSV reports at the end of a run:
+PyProdTest writes HTML, JSON, and CSV reports at the end of a run by default:
 `pyprodtest-report.html`, `pyprodtest-report.json`, and
-`pyprodtest-report.csv`. Report names are extensionless settings; each observer
-adds its own extension. Use the report option to select another base path:
+`pyprodtest-report.csv`. Report names are extensionless; each observer adds its
+own extension. Configure the output and formats in `pyprodtest.yaml`:
 
-```powershell
-uv run pytest -p pyprodtest --pyprodtest-report reports/device-acceptance
+```yaml
+reports:
+  output: reports/device-acceptance
+  html: true
+  json: true
+  csv: false
 ```
 
 Tests can adjust the final report using the session-scoped `report` fixture.
@@ -30,7 +34,8 @@ def test_configure_report(report):
     report.enabled = True
 ```
 
-Set `report.enabled = False` to suppress report generation for that run.
+Set `report.enabled = False` to suppress all report generation dynamically for
+that run. The YAML format toggles remain the normal project-level settings.
 
 ## Operator input
 
@@ -66,10 +71,15 @@ uv run pytest -p pyprodtest
 
 By default the server listens only on `127.0.0.1` at port `8765`. The page keeps
 reconnecting between runs, so PyProdTest reuses an existing browser tab instead
-of opening a new one. Use `--pyprodtest-webui-host` and
-`--pyprodtest-webui-port` to expose a different endpoint; port `0` selects a
-free port but cannot reuse a tab between runs.
-Use `--no-pyprodtest-webui` for a headless run.
+of opening a new one. Configure the UI in `pyprodtest.yaml`; port `0` selects a
+free port but cannot reuse a tab between runs:
+
+```yaml
+ui:
+  enabled: true
+  host: 127.0.0.1
+  port: 8765
+```
 
 ## Test order
 
@@ -78,19 +88,30 @@ one module are normally collected in definition order. For an explicit
 production plan, create `pyprodtest.yaml` in the pytest project root:
 
 ```yaml
+name: Device acceptance
+ui:
+  enabled: true
+reports:
+  output: pyprodtest-report
+  html: true
+  json: true
+  csv: true
 tests:
   - test/integration/serial_test.py
   - test/integration/status_light_test.py
   - test/test_observers.py::test_html_observer_reports_lifecycle_and_escapes_content
 ```
 
+The optional `name` is shown as the live UI heading and browser-tab title. If
+omitted, the UI uses `Production test execution`.
+
 Entries can name a whole test file, class, test function, or parametrized node
 ID. Only listed tests are run, in plan order. An entry that matches no collected
 tests is reported as an error so misspelled production tests are not silently
-skipped. Use `--pyprodtest-plan PATH` for a differently named or located plan.
-Node IDs can be inspected with `uv run pytest --collect-only -q`.
-Use `--pyprodtest-ignore-plan` when running the repository's complete
-development or unit-test suite.
+skipped. Node IDs can be inspected with `uv run pytest --collect-only -q`.
+
+All PyProdTest project settings live in `pyprodtest.yaml`; the plugin does not
+register equivalent command-line options.
 
 PyProdTest also streams `INFO` and higher log messages to the terminal during a
 run. Users can still select another threshold with pytest's

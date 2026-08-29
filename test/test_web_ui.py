@@ -100,6 +100,15 @@ def test_web_page_serves_packaged_ui_and_pico_css():
     assert b'elements.inputPanel.removeAttribute("aria-busy")' in script
 
 
+def test_web_page_uses_configured_name_in_heading_and_browser_title():
+    response = create_app(LiveState(), "Device <Acceptance>").test_client().get("/")
+
+    assert (
+        b"<title>Device &lt;Acceptance&gt; \xc2\xb7 PyProdTest</title>" in response.data
+    )
+    assert b'<h1 id="run-title">Device &lt;Acceptance&gt;</h1>' in response.data
+
+
 def test_final_state_is_available_before_server_shutdown():
     state = LiveState()
     client = create_app(state).test_client()

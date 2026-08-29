@@ -3,6 +3,15 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from _pyprodtest import hooks
+from _pyprodtest.config import (
+    DEFAULT_UI_NAME,
+    PyProdTestConfig,
+    ReportsConfig,
+    apply_test_plan,
+    load_config,
+)
+from _pyprodtest.observers import JsonObserver
+from _pyprodtest.report_settings import ReportSettings
 from _pyprodtest.test_record import TestRecord
 
 
@@ -76,9 +85,7 @@ def test_yaml_plan_selects_and_orders_files_and_node_ids(tmp_path: Path):
     )
     deselected = []
     config = SimpleNamespace(
-        rootpath=tmp_path,
-        getoption=lambda option: None,
-        hook=SimpleNamespace(pytest_deselected=lambda items: deselected.extend(items)),
+        hook=SimpleNamespace(pytest_deselected=lambda items: deselected.extend(items))
     )
     items = [
         SimpleNamespace(nodeid="test/test_hooks.py::test_first"),
@@ -87,7 +94,7 @@ def test_yaml_plan_selects_and_orders_files_and_node_ids(tmp_path: Path):
         SimpleNamespace(nodeid="test/test_integration.py::test_output"),
     ]
 
-    hooks.pytest_collection_modifyitems(config, items)
+    apply_test_plan(config, items, load_config(tmp_path).tests)
 
     assert [item.nodeid for item in items] == [
         "test/test_integration.py::test_input",
@@ -95,3 +102,56 @@ def test_yaml_plan_selects_and_orders_files_and_node_ids(tmp_path: Path):
         "test/test_hooks.py::test_second",
     ]
     assert [item.nodeid for item in deselected] == ["test/test_hooks.py::test_first"]
+
+
+def test_yaml_configures_name_ui_and_report_formats(tmp_path: Path):
+    (tmp_path / "pyprodtest.yaml").write_text(
+        """name: Device acceptance
+ui:
+  enabled: false
+  host: 0.0.0.0
+  port: 9000
+reports:
+  output: reports/device
+  html: true
+  json: false
+  csv: false
+tests:
+  - test/device_test.py
+""",
+        encoding="utf-8",
+    )
+
+    config = load_config(tmp_path)
+
+    assert config.name == "Device acceptance"
+    assert config.ui.enabled is False
+    assert config.ui.host == "0.0.0.0"
+    assert config.ui.port == 9000
+    assert config.reports.output == "reports/device"
+    assert config.reports.html is True
+    assert config.reports.json is False
+    assert config.reports.csv is False
+
+
+def test_ui_title_has_default_without_yaml(tmp_path: Path):
+    config = load_config(tmp_path)
+
+    assert config.name == DEFAULT_UI_NAME
+    assert config.tests is None
+    assert config.ui.enabled is True
+    assert config.reports.html is True
+    assert config.reports.json is True
+    assert config.reports.csv is True
+
+
+def test_only_enabled_report_observers_are_composed():
+    config = PyProdTestConfig(reports=ReportsConfig(html=False, json=True, csv=False))
+
+    observers, cleanup_callbacks = hooks._create_report_observers(
+        config, ReportSettings(), collect_only=False
+    )
+
+    assert len(observers) == 1
+    assert isinstance(observers[0], JsonObserver)
+    assert cleanup_callbacks == [observers[0].finalize]

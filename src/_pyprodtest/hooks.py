@@ -6,11 +6,11 @@ from dataclasses import dataclass, field
 
 import pytest
 
+from _pyprodtest.config import PyProdTestConfig, apply_test_plan, load_config
 from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor, TestInput
 from _pyprodtest.observers import CsvObserver, HtmlObserver, JsonObserver, TestObserver
 from _pyprodtest.observers.web_ui import WebUi
 from _pyprodtest.report_settings import ReportSettings
-from _pyprodtest.test_plan import apply_test_plan
 from _pyprodtest.test_record import CapturedLog, TestRecord
 
 LOGGER = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ class PluginState:
     input_acceptor: InputAcceptor = field(default_factory=ConsoleInputAcceptor)
     report_settings: ReportSettings = field(default_factory=ReportSettings)
     cleanup_callbacks: list[Callable[[], None]] = field(default_factory=list)
+    config: PyProdTestConfig = field(default_factory=PyProdTestConfig)
 
     def on_tests_collected(self, test_records: list[TestRecord]) -> None:
         for observer in self.observers:
@@ -86,77 +87,24 @@ class TestLogHandler(logging.Handler):
             test_record.logs.append(CapturedLog.from_record(record))
 
 
-def pytest_addoption(parser: pytest.Parser) -> None:
-    """Register PyProdTest command-line options."""
-    group = parser.getgroup("pyprodtest")
-    group.addoption(
-        "--pyprodtest-report",
-        "--pyprodtest-html",
-        dest="pyprodtest_report",
-        default="pyprodtest-report",
-        help="Set the base path for final HTML, JSON, and CSV reports.",
-    )
-    group.addoption(
-        "--pyprodtest-webui",
-        action="store_true",
-        dest="pyprodtest_webui",
-        default=True,
-        help="Open the live operator web UI (enabled by default).",
-    )
-    group.addoption(
-        "--no-pyprodtest-webui",
-        action="store_false",
-        dest="pyprodtest_webui",
-        default=True,
-        help="Disable the live operator web UI.",
-    )
-    group.addoption(
-        "--pyprodtest-webui-host",
-        default="127.0.0.1",
-        help="Host for the live web UI (default: 127.0.0.1).",
-    )
-    group.addoption(
-        "--pyprodtest-webui-port",
-        default=8765,
-        type=int,
-        help="Port for the live web UI; 0 selects a free port (default: 8765).",
-    )
-    group.addoption(
-        "--pyprodtest-plan",
-        metavar="PATH",
-        help="Select and order tests using a YAML plan (default: pyprodtest.yaml).",
-    )
-    group.addoption(
-        "--pyprodtest-ignore-plan",
-        action="store_true",
-        help="Ignore pyprodtest.yaml and use normal pytest collection.",
-    )
-
-
 def pytest_configure(config: pytest.Config) -> None:
     """Create isolated plugin state for this pytest session."""
     global _state
 
     _enable_live_logging(config)
 
-    report_path = config.getoption("pyprodtest_report")
-    report_settings = ReportSettings.from_output_path(report_path)
-    html_observer = HtmlObserver(report_settings)
-    json_observer = JsonObserver(report_settings)
-    csv_observer = CsvObserver(report_settings)
-    observers: list[TestObserver] = [html_observer, json_observer, csv_observer]
-
+    project_config = load_config(config.rootpath)
+    report_settings = ReportSettings.from_output_path(project_config.reports.output)
     collect_only = config.getoption("--collect-only")
-    cleanup_callbacks: list[Callable[[], None]] = []
-    if not collect_only:
-        cleanup_callbacks.extend(
-            [html_observer.finalize, json_observer.finalize, csv_observer.finalize]
-        )
+    observers, cleanup_callbacks = _create_report_observers(
+        project_config, report_settings, collect_only=collect_only
+    )
     input_acceptor: InputAcceptor = ConsoleInputAcceptor()
-    if config.getoption("pyprodtest_webui") and not collect_only:
+    if project_config.ui.enabled and not collect_only:
         web_ui = WebUi(
-            host=config.getoption("--pyprodtest-webui-host"),
-            port=config.getoption("--pyprodtest-webui-port"),
+            host=project_config.ui.host,
+            port=project_config.ui.port,
+            name=project_config.name,
         )
         web_ui.start(open_browser=True)
         LOGGER.info("PyProdTest web UI: %s", web_ui.url)
@@ -176,8 +124,40 @@ def pytest_configure(config: pytest.Config) -> None:
         input_acceptor=input_acceptor,
         report_settings=report_settings,
         cleanup_callbacks=cleanup_callbacks,
+        config=project_config,
     )
     LOGGER.debug("PyProdTest observers configured: %s", observers)
+
+
+def _create_report_observers(
+    project_config: PyProdTestConfig,
+    report_settings: ReportSettings,
+    *,
+    collect_only: bool,
+) -> tuple[list[TestObserver], list[Callable[[], None]]]:
+    """Compose only the report observers enabled for this session."""
+    observers: list[TestObserver] = []
+    cleanup_callbacks: list[Callable[[], None]] = []
+
+    if project_config.reports.html:
+        html_observer = HtmlObserver(report_settings)
+        observers.append(html_observer)
+        if not collect_only:
+            cleanup_callbacks.append(html_observer.finalize)
+
+    if project_config.reports.json:
+        json_observer = JsonObserver(report_settings)
+        observers.append(json_observer)
+        if not collect_only:
+            cleanup_callbacks.append(json_observer.finalize)
+
+    if project_config.reports.csv:
+        csv_observer = CsvObserver(report_settings)
+        observers.append(csv_observer)
+        if not collect_only:
+            cleanup_callbacks.append(csv_observer.finalize)
+
+    return observers, cleanup_callbacks
 
 
 def _enable_live_logging(config: pytest.Config) -> None:
@@ -224,7 +204,8 @@ def pytest_collection_modifyitems(
     config: pytest.Config, items: list[pytest.Item]
 ) -> None:
     """Apply an optional user-facing test plan to pytest's collected items."""
-    apply_test_plan(config, items)
+    if _state is not None:
+        apply_test_plan(config, items, _state.config.tests)
 
 
 def pytest_runtest_call(item: pytest.Item) -> None:

@@ -10,14 +10,14 @@ PICO_CSS = Path(__file__).parents[2] / "web_assets" / "pico.min.css"
 THEME_CSS = Path(__file__).parents[2] / "web_assets" / "theme.css"
 
 
-def create_app(state: LiveState) -> Flask:
+def create_app(state: LiveState, name: str = "Production test execution") -> Flask:
     """Create an HTTP application around an injected live state."""
     app = Flask(__name__)
 
     @app.get("/")
     def index() -> str:
         state.note_client()
-        return render_template("index.html")
+        return render_template("index.html", name=name)
 
     @app.get("/assets/pico.min.css")
     def pico_css() -> Response:

@@ -1,3 +1,13 @@
+name: PyProdTest example run
+ui:
+  enabled: true
+  host: 127.0.0.1
+  port: 8765
+reports:
+  output: pyprodtest-report
+  html: true
+  json: true
+  csv: true
 tests:
   - test/integration/serial_test.py
   - test/integration/status_light_test.py
