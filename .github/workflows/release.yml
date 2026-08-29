@@ -15,12 +15,12 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v9
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
@@ -60,7 +60,7 @@ jobs:
             "import importlib.metadata, pyprodtest; assert pyprodtest.__all__; assert any(ep.name == 'pyprodtest' for ep in importlib.metadata.entry_points(group='pytest11'))"
 
       - name: Upload distributions
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: distributions
           path: dist/
@@ -76,12 +76,12 @@ jobs:
 
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v9
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: false
 
       - name: Download distributions
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: distributions
           path: dist/
