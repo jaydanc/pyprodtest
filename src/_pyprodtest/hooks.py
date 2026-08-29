@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
+from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor, TestInput
 from _pyprodtest.observers import HtmlObserver, TestObserver
 from _pyprodtest.test_record import CapturedLog, TestRecord
 
@@ -19,6 +20,7 @@ class PluginState:
     records: dict[str, TestRecord] = field(default_factory=dict)
     current_test_nodeid: str | None = None
     log_handler: logging.Handler | None = None
+    input_acceptor: InputAcceptor = field(default_factory=ConsoleInputAcceptor)
 
     def on_tests_collected(self, test_records: list[TestRecord]) -> None:
         for observer in self.observers:
@@ -34,6 +36,28 @@ class PluginState:
 
 
 _state: PluginState | None = None
+
+
+@pytest.fixture(scope="session")
+def input(request: pytest.FixtureRequest) -> TestInput:
+    """Return input from the acceptor selected by the plugin's run mode."""
+    if _state is None:
+        raise RuntimeError("PyProdTest is not configured")
+
+    def accept(prompt: str, input_type: type[str] | type[bool] = str) -> str | bool:
+        capture_manager = request.config.pluginmanager.get_plugin("capturemanager")
+        if capture_manager is None:
+            return _state.input_acceptor.accept(prompt, input_type)
+
+        # pytest's standard disabled-capture context leaves stdin blocked.
+        # Explicitly include stdin while suspending capture for the prompt.
+        capture_manager.suspend(in_=True)
+        try:
+            return _state.input_acceptor.accept(prompt, input_type)
+        finally:
+            capture_manager.resume()
+
+    return accept
 
 
 class TestLogHandler(logging.Handler):
