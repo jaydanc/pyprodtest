@@ -8,6 +8,7 @@ import pytest
 
 from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor, TestInput
 from _pyprodtest.observers import HtmlObserver, TestObserver
+from _pyprodtest.observers.html_report import ReportSettings
 from _pyprodtest.observers.web_ui import WebUi
 from _pyprodtest.test_plan import apply_test_plan
 from _pyprodtest.test_record import CapturedLog, TestRecord
@@ -24,6 +25,7 @@ class PluginState:
     current_test_nodeid: str | None = None
     log_handler: logging.Handler | None = None
     input_acceptor: InputAcceptor = field(default_factory=ConsoleInputAcceptor)
+    report_settings: ReportSettings = field(default_factory=ReportSettings)
     cleanup_callbacks: list[Callable[[], None]] = field(default_factory=list)
 
     def on_tests_collected(self, test_records: list[TestRecord]) -> None:
@@ -40,6 +42,14 @@ class PluginState:
 
 
 _state: PluginState | None = None
+
+
+@pytest.fixture(scope="session")
+def report() -> ReportSettings:
+    """Return mutable settings for the final standalone HTML report."""
+    if _state is None:
+        raise RuntimeError("PyProdTest is not configured")
+    return _state.report_settings
 
 
 @pytest.fixture(scope="session")
@@ -82,7 +92,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     group.addoption(
         "--pyprodtest-html",
         default="pyprodtest-report.html",
-        help="Write a live HTML test report to PATH.",
+        help="Set the final HTML report output path.",
     )
     group.addoption(
         "--pyprodtest-webui",
@@ -127,12 +137,12 @@ def pytest_configure(config: pytest.Config) -> None:
 
     _enable_live_logging(config)
 
-    observers: list[TestObserver] = []
     html_path = config.getoption("--pyprodtest-html")
-    if html_path:
-        observers.append(HtmlObserver(html_path))
+    report_settings = ReportSettings.from_output_path(html_path)
+    html_observer = HtmlObserver(report_settings)
+    observers: list[TestObserver] = [html_observer]
 
-    cleanup_callbacks: list[Callable[[], None]] = []
+    cleanup_callbacks: list[Callable[[], None]] = [html_observer.finalize]
     input_acceptor: InputAcceptor = ConsoleInputAcceptor()
     if config.getoption("pyprodtest_webui"):
         web_ui = WebUi(
@@ -155,6 +165,7 @@ def pytest_configure(config: pytest.Config) -> None:
         observers=observers,
         log_handler=handler,
         input_acceptor=input_acceptor,
+        report_settings=report_settings,
         cleanup_callbacks=cleanup_callbacks,
     )
     LOGGER.debug("PyProdTest observers configured: %s", observers)

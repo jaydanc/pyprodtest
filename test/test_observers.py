@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from _pyprodtest.observers import HtmlObserver, TestObserver
+from _pyprodtest.observers.html_report import ReportSettings
 from _pyprodtest.test_record import CapturedLog, TestRecord
 
 
@@ -27,19 +28,24 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
             )
         ],
     )
-    observer = HtmlObserver(report_path)
+    settings = ReportSettings.from_output_path(report_path)
+    observer = HtmlObserver(settings)
 
     observer.on_tests_collected([record])
-    assert "pending" in report_path.read_text(encoding="utf-8")
+    assert not report_path.exists()
 
     record.outcome = "running"
     observer.on_test_run(record)
-    assert "running" in report_path.read_text(encoding="utf-8")
+    assert not report_path.exists()
 
     record.outcome = "passed"
     record.duration = 0.125
     record.failure_reason = "Expected <one>, got &two"
     observer.on_test_end(record)
+    settings.path = tmp_path / "final"
+    settings.name = "renamed.html"
+    observer.finalize()
+    report_path = tmp_path / "final" / "renamed.html"
     report = report_path.read_text(encoding="utf-8")
 
     assert "A &lt;test&gt;" in report
@@ -57,3 +63,13 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
     assert "Measured &lt;5V&gt; &amp; stable" in report
     assert "Expected &lt;one&gt;, got &amp;two" in report
     assert "0.125s" in report
+
+
+def test_html_observer_can_be_disabled_by_report_settings(tmp_path: Path):
+    settings = ReportSettings(path=tmp_path, enabled=False)
+    observer = HtmlObserver(settings)
+    observer.on_tests_collected([TestRecord(name="Test")])
+
+    observer.finalize()
+
+    assert not settings.output_path.exists()

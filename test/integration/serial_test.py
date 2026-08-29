@@ -5,6 +5,8 @@ from test.integration.fixture.device import Device
 @info(name="Serial number", desc="Identify the device under test")
 @req("REQ-1234")
 @step("Enter the device serial number")
-def test_serial(input, device: Device) -> None:
+def test_serial(input, report, device: Device) -> None:
     device.serial = input("Enter the device serial number")
+    report.path = "reports"
+    report.name = f"report-{device.serial}.html"
     assert device.serial
