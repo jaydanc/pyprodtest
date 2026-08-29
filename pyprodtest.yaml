@@ -1,14 +1,18 @@
-name: Integration Test Device
+name: DeviceName
+
 ui:
   enabled: true
   host: 127.0.0.1
   port: 8765
+
 reports:
-  output: integration_report
+  output: reports/device_name
   html: true
   json: true
   csv: true
   pdf: true
+
+# Tests are executed in the order they appear
 tests:
   - test/integration/serial_test.py
   - test/integration/status_light_test.py
