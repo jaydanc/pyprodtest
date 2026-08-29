@@ -11,11 +11,13 @@ from _pyprodtest.web_ui.input_acceptor import WebInputAcceptor
 from _pyprodtest.web_ui.observer import WebObserver
 from _pyprodtest.web_ui.state import LiveState
 
+EXISTING_BROWSER_WAIT_SECONDS = 0.75
+
 
 class WebUi:
     """Compose the observer, input provider, and background HTTP server."""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 0) -> None:
+    def __init__(self, host: str = "127.0.0.1", port: int = 8765) -> None:
         self.host = host
         self.state = LiveState()
         self.observer = WebObserver(self.state)
@@ -42,7 +44,9 @@ class WebUi:
             daemon=True,
         )
         self._thread.start()
-        if open_browser:
+        if open_browser and not self.state.wait_for_client(
+            EXISTING_BROWSER_WAIT_SECONDS
+        ):
             webbrowser.open(self.url)
 
     def finish_and_stop(self) -> None:

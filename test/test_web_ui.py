@@ -127,6 +127,22 @@ def test_shutdown_waits_for_attached_page_to_fetch_final_state():
     assert finished.is_set()
 
 
+def test_existing_page_can_reconnect_to_a_new_run():
+    state = LiveState()
+    connected = threading.Event()
+
+    def wait_for_page() -> None:
+        if state.wait_for_client(1):
+            connected.set()
+
+    waiter = threading.Thread(target=wait_for_page)
+    waiter.start()
+    state.note_client()
+    waiter.join(timeout=1)
+
+    assert connected.is_set()
+
+
 def _wait_for_input(client):
     for _ in range(100):
         prompt = client.get("/api/state").get_json()["input_request"]

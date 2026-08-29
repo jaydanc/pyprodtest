@@ -49,9 +49,11 @@ operator input request. It updates automatically while pytest is running.
 uv run pytest -p pyprodtest --pyprodtest-webui
 ```
 
-By default the server listens only on `127.0.0.1` and selects a free port. Use
-`--pyprodtest-webui-host` and `--pyprodtest-webui-port` to expose a stable remote
-endpoint when required.
+By default the server listens only on `127.0.0.1` at port `8765`. The page keeps
+reconnecting between runs, so PyProdTest reuses an existing browser tab instead
+of opening a new one. Use `--pyprodtest-webui-host` and
+`--pyprodtest-webui-port` to expose a different endpoint; port `0` selects a
+free port but cannot reuse a tab between runs.
 
 PyProdTest also streams `INFO` and higher log messages to the terminal during a
 run. Users can still select another threshold with pytest's

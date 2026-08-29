@@ -95,9 +95,9 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
     group.addoption(
         "--pyprodtest-webui-port",
-        default=0,
+        default=8765,
         type=int,
-        help="Port for the live web UI; 0 selects a free port (default: 0).",
+        help="Port for the live web UI; 0 selects a free port (default: 8765).",
     )
 
 

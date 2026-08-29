@@ -62,9 +62,18 @@ class LiveState:
         with self._lock:
             self._run_complete = True
 
+    def note_client(self) -> None:
+        """Record that an operator page has connected to this run."""
+        self._client_seen.set()
+
+    def wait_for_client(self, timeout: float) -> bool:
+        """Wait briefly for an existing operator page to reconnect."""
+        return self._client_seen.wait(timeout)
+
     def wait_until_complete_is_seen(self, timeout: float) -> None:
         """Give an attached browser a bounded chance to fetch the final state."""
-        self._completion_seen.wait(timeout)
+        if self._client_seen.is_set():
+            self._completion_seen.wait(timeout)
 
     def request_input(
         self, prompt: str, input_type: type[str] | type[bool]

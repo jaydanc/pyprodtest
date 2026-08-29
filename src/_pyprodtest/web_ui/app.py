@@ -15,6 +15,7 @@ def create_app(state: LiveState) -> Flask:
 
     @app.get("/")
     def index() -> str:
+        state.note_client()
         return render_template("index.html")
 
     @app.get("/assets/pico.min.css")

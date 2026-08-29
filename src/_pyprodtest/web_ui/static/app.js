@@ -167,7 +167,7 @@ async function refresh() {
     renderTests(state.tests);
     renderInput(state.input_request);
     elements.connection.textContent = state.run_complete ? "Complete" : "Live";
-    if (!state.run_complete) scheduleRefresh();
+    scheduleRefresh();
   } catch (error) {
     console.warn("Unable to refresh PyProdTest state", error);
     elements.connection.textContent = "Reconnecting…";
