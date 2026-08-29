@@ -96,18 +96,31 @@ def test_interrupted_web_input_clears_the_active_prompt():
 def test_web_page_serves_packaged_ui_and_pico_css():
     client = create_app(LiveState()).test_client()
 
-    assert b"PyProdTest" in client.get("/").data
+    page = client.get("/").data
+    assert b"PyProdTest" in page
+    assert b'<script type="module" src="/static/app.js"></script>' in page
     assert b"--pico-font-family" in client.get("/assets/pico.min.css").data
     assert b"--app-bg" in client.get("/assets/theme.css").data
-    script = client.get("/static/app.js").data
-    assert b"No logs captured for this test." in script
-    assert b'class="chevron"' in script
-    assert b'elements.inputPanel.removeAttribute("aria-busy")' in script
-    assert b"new Chart(canvas" in script
-    assert b"series.points.map((point) => point.y)" in script
-    assert b"Boolean(series.unit)" in script
-    assert b"Boolean(series.x_unit)" in script
-    assert b"/assets/chart.umd.min.js" in client.get("/").data
+    scripts = {
+        name: client.get(f"/static/{name}.js")
+        for name in ("app", "charts", "dashboard", "tests", "utils")
+    }
+    assert all(response.status_code == 200 for response in scripts.values())
+    assert all(response.mimetype == "text/javascript" for response in scripts.values())
+    assert (
+        b'import { renderState, setConnection } from "./dashboard.js"'
+        in scripts["app"].data
+    )
+    assert b"No logs captured for this test." in scripts["tests"].data
+    assert b'class="chevron"' in scripts["tests"].data
+    assert (
+        b'elements.inputPanel.removeAttribute("aria-busy")' in scripts["dashboard"].data
+    )
+    assert b"new Chart(canvas" in scripts["charts"].data
+    assert b"series.points.map((point) => point.y)" in scripts["charts"].data
+    assert b"Boolean(series.unit)" in scripts["charts"].data
+    assert b"Boolean(series.x_unit)" in scripts["charts"].data
+    assert b"/assets/chart.umd.min.js" in page
     chart_js = client.get("/assets/chart.umd.min.js")
     assert chart_js.mimetype == "application/javascript"
     assert b"Chart.js v4.4.7" in chart_js.data
