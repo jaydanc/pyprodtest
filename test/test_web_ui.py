@@ -3,11 +3,11 @@ from unittest.mock import patch
 
 import pytest
 
+from _pyprodtest.observers.web_ui.app import create_app
+from _pyprodtest.observers.web_ui.input_acceptor import WebInputAcceptor
+from _pyprodtest.observers.web_ui.observer import WebObserver
+from _pyprodtest.observers.web_ui.state import LiveState
 from _pyprodtest.test_record import CapturedLog, TestRecord
-from _pyprodtest.web_ui.app import create_app
-from _pyprodtest.web_ui.input_acceptor import WebInputAcceptor
-from _pyprodtest.web_ui.observer import WebObserver
-from _pyprodtest.web_ui.state import LiveState
 
 
 def test_web_observer_exposes_live_record_updates():

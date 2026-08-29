@@ -6,10 +6,10 @@ import webbrowser
 
 from werkzeug.serving import BaseWSGIServer, make_server
 
-from _pyprodtest.web_ui.app import create_app
-from _pyprodtest.web_ui.input_acceptor import WebInputAcceptor
-from _pyprodtest.web_ui.observer import WebObserver
-from _pyprodtest.web_ui.state import LiveState
+from _pyprodtest.observers.web_ui.app import create_app
+from _pyprodtest.observers.web_ui.input_acceptor import WebInputAcceptor
+from _pyprodtest.observers.web_ui.observer import WebObserver
+from _pyprodtest.observers.web_ui.state import LiveState
 
 EXISTING_BROWSER_WAIT_SECONDS = 0.75
 

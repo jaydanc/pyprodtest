@@ -3,8 +3,8 @@
 from collections.abc import Sequence
 
 from _pyprodtest.observers.test_observer import TestObserver
+from _pyprodtest.observers.web_ui.state import LiveState
 from _pyprodtest.test_record import TestRecord
-from _pyprodtest.web_ui.state import LiveState
 
 
 class WebObserver(TestObserver):

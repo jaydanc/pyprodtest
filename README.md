@@ -41,12 +41,12 @@ live web runs.
 
 ## Live web UI
 
-Run pytest with the web UI enabled to open an operator page in the default
-browser. The page shows collection and execution state, captured logs, and any
-operator input request. It updates automatically while pytest is running.
+PyProdTest opens an operator page in the default browser automatically. The
+page shows collection and execution state, captured logs, and any operator
+input request. It updates automatically while pytest is running.
 
 ```powershell
-uv run pytest -p pyprodtest --pyprodtest-webui
+uv run pytest -p pyprodtest
 ```
 
 By default the server listens only on `127.0.0.1` at port `8765`. The page keeps
@@ -54,6 +54,7 @@ reconnecting between runs, so PyProdTest reuses an existing browser tab instead
 of opening a new one. Use `--pyprodtest-webui-host` and
 `--pyprodtest-webui-port` to expose a different endpoint; port `0` selects a
 free port but cannot reuse a tab between runs.
+Use `--no-pyprodtest-webui` for a headless run.
 
 ## Test order
 

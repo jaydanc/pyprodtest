@@ -4,9 +4,9 @@ from pathlib import Path
 
 from flask import Flask, Response, jsonify, render_template, request
 
-from _pyprodtest.web_ui.state import LiveState
+from _pyprodtest.observers.web_ui.state import LiveState
 
-PICO_CSS = Path(__file__).parents[1] / "web_assets" / "pico.min.css"
+PICO_CSS = Path(__file__).parents[2] / "web_assets" / "pico.min.css"
 
 
 def create_app(state: LiveState) -> Flask:

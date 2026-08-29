@@ -3,7 +3,7 @@
 from typing import overload
 
 from _pyprodtest.input_acceptors import InputAcceptor
-from _pyprodtest.web_ui.state import LiveState
+from _pyprodtest.observers.web_ui.state import LiveState
 
 
 class WebInputAcceptor(InputAcceptor):

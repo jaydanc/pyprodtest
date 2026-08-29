@@ -8,9 +8,9 @@ import pytest
 
 from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor, TestInput
 from _pyprodtest.observers import HtmlObserver, TestObserver
+from _pyprodtest.observers.web_ui import WebUi
 from _pyprodtest.test_plan import apply_test_plan
 from _pyprodtest.test_record import CapturedLog, TestRecord
-from _pyprodtest.web_ui import WebUi
 
 LOGGER = logging.getLogger(__name__)
 
@@ -87,7 +87,16 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     group.addoption(
         "--pyprodtest-webui",
         action="store_true",
-        help="Open a live operator web UI for this test run.",
+        dest="pyprodtest_webui",
+        default=True,
+        help="Open the live operator web UI (enabled by default).",
+    )
+    group.addoption(
+        "--no-pyprodtest-webui",
+        action="store_false",
+        dest="pyprodtest_webui",
+        default=True,
+        help="Disable the live operator web UI.",
     )
     group.addoption(
         "--pyprodtest-webui-host",
@@ -125,7 +134,7 @@ def pytest_configure(config: pytest.Config) -> None:
 
     cleanup_callbacks: list[Callable[[], None]] = []
     input_acceptor: InputAcceptor = ConsoleInputAcceptor()
-    if config.getoption("--pyprodtest-webui"):
+    if config.getoption("pyprodtest_webui"):
         web_ui = WebUi(
             host=config.getoption("--pyprodtest-webui-host"),
             port=config.getoption("--pyprodtest-webui-port"),
