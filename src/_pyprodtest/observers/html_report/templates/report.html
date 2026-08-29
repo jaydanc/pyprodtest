@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PyProdTest report</title>
+    <style>{{ pico_css | safe }}</style>
+    <style>
+      :root { --pico-font-size: 100%; }
+      body { background: var(--pico-background-color); }
+      main.container { padding-block: 2.5rem; }
+      .report-header { margin-bottom: 2rem; }
+      .report-header hgroup { margin-bottom: 1.25rem; }
+      .summary-grid { grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); }
+      .summary-card { margin: 0; padding: 1rem; text-align: center; }
+      .summary-card strong { display: block; font-size: 1.75rem; line-height: 1; }
+      .test-card { margin-bottom: 1.25rem; }
+      .test-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+      .test-card h2 { margin: 0; font-size: 1.2rem; overflow-wrap: anywhere; }
+      .test-card p { margin-bottom: 0.6rem; }
+      .badge { border-radius: 999px; display: inline-block; flex: 0 0 auto; padding: 0.2rem 0.65rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+      .badge-passed { background: #d8f3dc; color: #1b4332; }
+      .badge-failed { background: #ffe0e0; color: #9d0208; }
+      .badge-running { background: #fff3bf; color: #7f4f00; }
+      .badge-skipped { background: #e9ecef; color: #495057; }
+      .badge-pending { background: #e7f5ff; color: #1864ab; }
+      .metadata { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; color: var(--pico-muted-color); font-size: 0.9rem; }
+      .metadata span { overflow-wrap: anywhere; }
+      details { margin-top: 0.75rem; }
+      details summary { font-weight: 600; }
+      .log-list { list-style: none; margin: 0; padding: 0; }
+      .log-entry { border-bottom: 1px solid var(--pico-muted-border-color); padding: 0.6rem 0; overflow-wrap: anywhere; }
+      .log-entry:last-child { border-bottom: 0; }
+      .log-meta { color: var(--pico-muted-color); font-family: var(--pico-font-family-monospace); font-size: 0.78rem; }
+      pre { max-height: 28rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .empty-state { padding-block: 3rem; text-align: center; color: var(--pico-muted-color); }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <header class="report-header">
+        <hgroup>
+          <h1>PyProdTest report</h1>
+          <p>Test execution results and diagnostics</p>
+        </hgroup>
+        <div class="grid summary-grid">
+          <article class="summary-card"><strong>{{ total }}</strong><small>Total</small></article>
+          <article class="summary-card"><strong>{{ outcomes.get("passed", 0) }}</strong><small>Passed</small></article>
+          <article class="summary-card"><strong>{{ outcomes.get("failed", 0) }}</strong><small>Failed</small></article>
+          <article class="summary-card"><strong>{{ outcomes.get("running", 0) }}</strong><small>Running</small></article>
+          <article class="summary-card"><strong>{{ outcomes.get("pending", 0) }}</strong><small>Pending</small></article>
+        </div>
+      </header>
+
+      <section aria-label="Test results">
+        {% for test in test_records %}
+          <article class="test-card">
+            <header>
+              <div>
+                <h2>{{ test.name }}</h2>
+                {% if test.description %}<p>{{ test.description }}</p>{% endif %}
+              </div>
+              <span class="badge badge-{{ test.outcome }}">{{ test.outcome }}</span>
+            </header>
+
+            <div class="metadata">
+              <span><strong>Duration:</strong> {{ "%.3f" | format(test.duration) }}s</span>
+              {% if test.nodeid %}<span><strong>Node:</strong> {{ test.nodeid }}</span>{% endif %}
+              {% if test.requirements %}<span><strong>Requirements:</strong> {{ test.requirements | join(", ") }}</span>{% endif %}
+            </div>
+
+            {% if test.steps %}
+              <details>
+                <summary>Steps ({{ test.steps | length }})</summary>
+                <ol>{% for step in test.steps %}<li>{{ step }}</li>{% endfor %}</ol>
+              </details>
+            {% endif %}
+
+            <details>
+              <summary>Logs ({{ test.logs | length }})</summary>
+              {% if test.logs %}
+                <ul class="log-list">
+                  {% for log in test.logs %}
+                    <li class="log-entry">
+                      <div class="log-meta">{{ log.timestamp }} · {{ log.level }} · {{ log.logger }}</div>
+                      <div>{{ log.message }}</div>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p>No logs captured.</p>
+              {% endif %}
+            </details>
+
+            {% if test.failure_reason %}
+              <details open>
+                <summary>Failure details</summary>
+                <pre><code>{{ test.failure_reason }}</code></pre>
+              </details>
+            {% endif %}
+          </article>
+        {% else %}
+          <article class="empty-state">No tests were collected.</article>
+        {% endfor %}
+      </section>
+    </main>
+  </body>
+</html>

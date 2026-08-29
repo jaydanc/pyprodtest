@@ -45,7 +45,11 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
     assert "A &lt;test&gt;" in report
     assert "Uses an &amp; safely" in report
     assert "REQ-1" in report
-    assert "Start → Finish" in report
+    assert "Start" in report
+    assert "Finish" in report
+    assert "Logs (1)" in report
+    assert "Failure details" in report
+    assert "--pico-font-family" in report
     assert "passed" in report
     assert "2026-08-29T12:34:56.789+01:00" in report
     assert "INFO" in report

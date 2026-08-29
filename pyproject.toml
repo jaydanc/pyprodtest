@@ -5,6 +5,7 @@ description = "Pytest plugin for production testing"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "jinja2>=3.1.6",
     "pytest>=8.4.2",
 ]
 
@@ -18,6 +19,9 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.setuptools.package-data]
+"_pyprodtest.observers.html_report" = ["templates/*.html", "templates/css/*.css"]
 
 [project.entry-points.pytest11]
 pyprodtest = "_pyprodtest.hooks"
