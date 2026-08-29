@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -155,3 +156,11 @@ def test_only_enabled_report_observers_are_composed():
     assert len(observers) == 1
     assert isinstance(observers[0], JsonObserver)
     assert cleanup_callbacks == [observers[0].finalize]
+
+
+def test_report_output_has_session_timestamp_appended():
+    timestamp = datetime(2026, 8, 29, 14, 5, 7, tzinfo=timezone.utc)
+
+    output = hooks._timestamped_report_output("reports/device", timestamp)
+
+    assert output == Path("reports/device-20260829-140507")

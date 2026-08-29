@@ -11,10 +11,11 @@ uv run ruff format --check .
 uv run ruff check .
 uv run pytest -p pyprodtest
 
-PyProdTest writes HTML, JSON, and CSV reports at the end of a run by default:
-`pyprodtest-report.html`, `pyprodtest-report.json`, and
-`pyprodtest-report.csv`. Report names are extensionless; each observer adds its
-own extension. Configure the output and formats in `pyprodtest.yaml`:
+PyProdTest writes HTML, JSON, and CSV reports at the end of a run by default,
+such as `pyprodtest-report-20260829-140507.html`, `.json`, and `.csv`. A session
+timestamp is appended to the configured extensionless name, then each observer
+adds its own extension.
+Configure the output and formats in `pyprodtest.yaml`:
 
 ```yaml
 reports:
