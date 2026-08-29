@@ -1,20 +1,56 @@
 :root {
-  --md-primary-fg-color: #0f766e;
-  --md-primary-fg-color--light: #14b8a6;
-  --md-primary-fg-color--dark: #115e59;
-  --md-accent-fg-color: #65a30d;
+  --md-primary-fg-color: #0875b6;
+  --md-primary-fg-color--light: #20b4ff;
+  --md-primary-fg-color--dark: #075f94;
+  --md-accent-fg-color: #108bca;
+  --pyprodtest-panel: #ffffff;
+  --pyprodtest-panel-raised: #f3f8fc;
+  --pyprodtest-line: #d7e2ec;
+  --pyprodtest-shadow: rgb(16 44 68 / 10%);
 }
 
 [data-md-color-scheme="slate"] {
-  --md-default-bg-color: #0b1214;
-  --md-default-bg-color--light: #111c1f;
-  --md-code-bg-color: #111c1f;
-  --md-accent-fg-color: #a3e635;
+  --md-default-bg-color: #0b1017;
+  --md-default-bg-color--light: #121a24;
+  --md-default-bg-color--lighter: #17212d;
+  --md-default-bg-color--lightest: #243142;
+  --md-code-bg-color: #0e151e;
+  --md-default-fg-color: #edf4fb;
+  --md-default-fg-color--light: #9eb0c3;
+  --md-default-fg-color--lighter: #6f8297;
+  --md-typeset-a-color: #2eb8ff;
+  --md-accent-fg-color: #2eb8ff;
+  --pyprodtest-panel: #121a24;
+  --pyprodtest-panel-raised: #17212d;
+  --pyprodtest-line: #243142;
+  --pyprodtest-shadow: rgb(0 0 0 / 20%);
+}
+
+body {
+  background-image: radial-gradient(
+    circle at 75% -20%,
+    rgb(46 184 255 / 8%),
+    transparent 34rem
+  );
+  background-repeat: no-repeat;
 }
 
 .md-header {
+  background: color-mix(in srgb, var(--md-default-bg-color) 90%, transparent);
+  border-bottom: 1px solid var(--pyprodtest-line);
   box-shadow: none;
-  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.md-tabs {
+  background: color-mix(in srgb, var(--md-default-bg-color) 94%, transparent);
+  border-bottom: 1px solid var(--pyprodtest-line);
+}
+
+.md-search__form {
+  background-color: var(--pyprodtest-panel-raised);
+  border: 1px solid var(--pyprodtest-line);
+  border-radius: 0.55rem;
 }
 
 .md-main__inner {
@@ -32,17 +68,42 @@
 }
 
 .md-typeset .grid.cards > ul > li {
+  background: var(--pyprodtest-panel);
+  border-color: var(--pyprodtest-line);
   border-radius: 0.8rem;
-  transition: border-color 160ms ease, transform 160ms ease;
+  box-shadow: 0 0.7rem 2rem var(--pyprodtest-shadow);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .md-typeset .grid.cards > ul > li:hover {
   border-color: var(--md-accent-fg-color);
+  box-shadow: 0 1rem 2.5rem var(--pyprodtest-shadow);
   transform: translateY(-2px);
 }
 
 .md-typeset .md-button {
-  border-radius: 999px;
+  border-color: var(--md-accent-fg-color);
+  border-radius: 0.55rem;
+}
+
+.md-typeset .md-button--primary {
+  background: linear-gradient(145deg, #20b4ff, #0875b6);
+  border-color: #108bca;
+  color: #fff;
+}
+
+.md-typeset code,
+.md-typeset pre > code {
+  border-radius: 0.4rem;
+}
+
+.md-typeset pre > code {
+  border: 1px solid var(--pyprodtest-line);
+}
+
+.md-nav__link--active,
+.md-nav__link:is(:focus, :hover) {
+  color: var(--md-accent-fg-color);
 }
 
 .md-typeset .product-preview {
