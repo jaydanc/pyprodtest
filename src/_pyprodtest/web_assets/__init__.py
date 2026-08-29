@@ -1,0 +1,1 @@
+"""Shared packaged web assets."""

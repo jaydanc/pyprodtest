@@ -1,6 +1,7 @@
 """Pytest plugin hooks for capturing and forwarding test information."""
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import pytest
@@ -8,6 +9,7 @@ import pytest
 from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor, TestInput
 from _pyprodtest.observers import HtmlObserver, TestObserver
 from _pyprodtest.test_record import CapturedLog, TestRecord
+from _pyprodtest.web_ui import WebUi
 
 LOGGER = logging.getLogger(__name__)
 
@@ -21,6 +23,7 @@ class PluginState:
     current_test_nodeid: str | None = None
     log_handler: logging.Handler | None = None
     input_acceptor: InputAcceptor = field(default_factory=ConsoleInputAcceptor)
+    cleanup_callbacks: list[Callable[[], None]] = field(default_factory=list)
 
     def on_tests_collected(self, test_records: list[TestRecord]) -> None:
         for observer in self.observers:
@@ -80,6 +83,22 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         metavar="PATH",
         help="Write a live HTML test report to PATH.",
     )
+    group.addoption(
+        "--pyprodtest-webui",
+        action="store_true",
+        help="Open a live operator web UI for this test run.",
+    )
+    group.addoption(
+        "--pyprodtest-webui-host",
+        default="127.0.0.1",
+        help="Host for the live web UI (default: 127.0.0.1).",
+    )
+    group.addoption(
+        "--pyprodtest-webui-port",
+        default=0,
+        type=int,
+        help="Port for the live web UI; 0 selects a free port (default: 0).",
+    )
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -93,6 +112,19 @@ def pytest_configure(config: pytest.Config) -> None:
     if html_path:
         observers.append(HtmlObserver(html_path))
 
+    cleanup_callbacks: list[Callable[[], None]] = []
+    input_acceptor: InputAcceptor = ConsoleInputAcceptor()
+    if config.getoption("--pyprodtest-webui"):
+        web_ui = WebUi(
+            host=config.getoption("--pyprodtest-webui-host"),
+            port=config.getoption("--pyprodtest-webui-port"),
+        )
+        web_ui.start(open_browser=True)
+        LOGGER.info("PyProdTest web UI: %s", web_ui.url)
+        observers.append(web_ui.observer)
+        input_acceptor = web_ui.input_acceptor
+        cleanup_callbacks.append(web_ui.finish_and_stop)
+
     root_logger = logging.getLogger()
     handler = TestLogHandler()
     root_logger.addHandler(handler)
@@ -102,6 +134,8 @@ def pytest_configure(config: pytest.Config) -> None:
     _state = PluginState(
         observers=observers,
         log_handler=handler,
+        input_acceptor=input_acceptor,
+        cleanup_callbacks=cleanup_callbacks,
     )
     LOGGER.debug("PyProdTest observers configured: %s", observers)
 
@@ -120,6 +154,9 @@ def pytest_unconfigure() -> None:
     if _state is not None and _state.log_handler is not None:
         root_logger = logging.getLogger()
         root_logger.removeHandler(_state.log_handler)
+    if _state is not None:
+        for cleanup in _state.cleanup_callbacks:
+            cleanup()
     _state = None
 
 

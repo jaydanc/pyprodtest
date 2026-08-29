@@ -10,6 +10,7 @@ from _pyprodtest.observers.test_observer import TestObserver
 from _pyprodtest.test_record import TestRecord
 
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
+PICO_CSS = Path(__file__).parents[2] / "web_assets" / "pico.min.css"
 
 
 class HtmlObserver(TestObserver):
@@ -23,9 +24,7 @@ class HtmlObserver(TestObserver):
             autoescape=select_autoescape(("html", "xml")),
         )
         self._template = environment.get_template("report.html")
-        self._pico_css = (TEMPLATE_DIRECTORY / "css" / "pico.min.css").read_text(
-            encoding="utf-8"
-        )
+        self._pico_css = PICO_CSS.read_text(encoding="utf-8")
 
     def on_tests_collected(self, test_records: Sequence[TestRecord]) -> None:
         self._test_records = list(test_records)

@@ -37,7 +37,21 @@ def test_status_light(input):
 ```
 
 The plugin owns acceptor selection so tests use the same fixture in console and
-future live web runs.
+live web runs.
+
+## Live web UI
+
+Run pytest with the web UI enabled to open an operator page in the default
+browser. The page shows collection and execution state, captured logs, and any
+operator input request. It updates automatically while pytest is running.
+
+```powershell
+uv run pytest -p pyprodtest --pyprodtest-webui
+```
+
+By default the server listens only on `127.0.0.1` and selects a free port. Use
+`--pyprodtest-webui-host` and `--pyprodtest-webui-port` to expose a stable remote
+endpoint when required.
 
 PyProdTest also streams `INFO` and higher log messages to the terminal during a
 run. Users can still select another threshold with pytest's

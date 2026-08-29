@@ -1,0 +1,18 @@
+:root { --pico-font-size: 100%; }
+main.container { padding-block: 2.5rem; }
+.page-header { align-items: center; display: flex; justify-content: space-between; }
+.summary-grid { grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); }
+.summary-card { margin: 0 0 1.5rem; padding: 0.8rem; text-align: center; }
+.summary-card strong { display: block; font-size: 1.6rem; }
+.input-card { border-left: 0.35rem solid var(--pico-primary); }
+.test-card > header { align-items: start; display: flex; gap: 1rem; justify-content: space-between; }
+.test-card h2 { font-size: 1.15rem; margin: 0; overflow-wrap: anywhere; }
+.badge { border-radius: 999px; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.65rem; text-transform: uppercase; }
+.badge-passed { background: #d8f3dc; color: #1b4332; }
+.badge-failed { background: #ffe0e0; color: #9d0208; }
+.badge-running { background: #fff3bf; color: #7f4f00; }
+.badge-skipped, .badge-pending { background: #e9ecef; color: #495057; }
+.metadata, .log-meta { color: var(--pico-muted-color); font-size: 0.82rem; }
+.log-list { list-style: none; padding: 0; }
+.log-list li { border-bottom: 1px solid var(--pico-muted-border-color); padding: 0.5rem 0; }
+pre { max-height: 24rem; white-space: pre-wrap; }

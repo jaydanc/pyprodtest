@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PyProdTest live</title>
+    <link rel="stylesheet" href="/assets/pico.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+    <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+  </head>
+  <body>
+    <main class="container">
+      <header class="page-header">
+        <hgroup><h1>PyProdTest</h1><p>Live test execution</p></hgroup>
+        <small id="connection" aria-live="polite">Connecting…</small>
+      </header>
+      <section id="input-panel" hidden aria-live="assertive"></section>
+      <section id="summary" class="grid summary-grid" aria-label="Run summary"></section>
+      <section id="tests" aria-label="Tests"><article aria-busy="true">Waiting for collection…</article></section>
+    </main>
+  </body>
+</html>
