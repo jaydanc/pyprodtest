@@ -1,0 +1,16 @@
+name: PyProdTest demo
+
+ui:
+  enabled: true
+  host: 127.0.0.1
+  port: 8765
+
+reports:
+  output: reports/device-check
+  html: true
+  json: true
+  csv: true
+  pdf: true
+
+tests:
+  - test/test_device.py

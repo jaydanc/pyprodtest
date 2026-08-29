@@ -1,0 +1,22 @@
+[project]
+name = "demo"
+version = "0.1.0"
+description = "Operator-assisted production test demo for PyProdTest"
+readme = "README.md"
+authors = [
+    { name = "Jaydanc", email = "jaydan.cowell@sky.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "pyprodtest",
+]
+
+[project.scripts]
+demo = "demo:main"
+
+[build-system]
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+pyprodtest = { git = "https://github.com/jaydanc/pyprodtest.git" }
