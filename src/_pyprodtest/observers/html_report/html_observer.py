@@ -6,8 +6,8 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from _pyprodtest.observers.html_report.report_settings import ReportSettings
 from _pyprodtest.observers.test_observer import TestObserver
+from _pyprodtest.report_settings import ReportSettings
 from _pyprodtest.test_record import TestRecord
 
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
@@ -47,6 +47,8 @@ class HtmlObserver(TestObserver):
         if not self.settings.enabled:
             return
         output_path = self.settings.output_path
+        if output_path.suffix.casefold() != ".html":
+            output_path = output_path.parent / f"{output_path.name}.html"
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(self._render(), encoding="utf-8")
 

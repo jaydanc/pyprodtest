@@ -1,4 +1,4 @@
-"""Mutable configuration exposed by the report fixture."""
+"""Format-neutral configuration exposed by the report fixture."""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -6,15 +6,15 @@ from pathlib import Path
 
 @dataclass
 class ReportSettings:
-    """Control whether and where the final HTML report is written."""
+    """Control whether and where observers write their final reports."""
 
     path: str | Path = Path(".")
-    name: str = "pyprodtest-report.html"
+    name: str = "pyprodtest-report"
     enabled: bool = True
 
     @property
     def output_path(self) -> Path:
-        """Return the configured report directory and name as one path."""
+        """Return the extensionless report directory and name as one path."""
         return Path(self.path) / self.name
 
     @classmethod

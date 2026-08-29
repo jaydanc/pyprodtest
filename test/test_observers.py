@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from _pyprodtest.observers import HtmlObserver, TestObserver
-from _pyprodtest.observers.html_report import ReportSettings
+from _pyprodtest.report_settings import ReportSettings
 from _pyprodtest.test_record import CapturedLog, TestRecord
 
 

@@ -8,5 +8,5 @@ from test.integration.fixture.device import Device
 def test_serial(input, report, device: Device) -> None:
     device.serial = input("Enter the device serial number")
     report.path = "reports"
-    report.name = f"report-{device.serial}.html"
+    report.name = f"report-{device.serial}"
     assert device.serial

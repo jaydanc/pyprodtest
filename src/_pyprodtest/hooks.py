@@ -8,8 +8,8 @@ import pytest
 
 from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor, TestInput
 from _pyprodtest.observers import HtmlObserver, TestObserver
-from _pyprodtest.observers.html_report import ReportSettings
 from _pyprodtest.observers.web_ui import WebUi
+from _pyprodtest.report_settings import ReportSettings
 from _pyprodtest.test_plan import apply_test_plan
 from _pyprodtest.test_record import CapturedLog, TestRecord
 
@@ -91,7 +91,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     group = parser.getgroup("pyprodtest")
     group.addoption(
         "--pyprodtest-html",
-        default="pyprodtest-report.html",
+        default="pyprodtest-report",
         help="Set the final HTML report output path.",
     )
     group.addoption(
@@ -142,9 +142,12 @@ def pytest_configure(config: pytest.Config) -> None:
     html_observer = HtmlObserver(report_settings)
     observers: list[TestObserver] = [html_observer]
 
-    cleanup_callbacks: list[Callable[[], None]] = [html_observer.finalize]
+    collect_only = config.getoption("--collect-only")
+    cleanup_callbacks: list[Callable[[], None]] = []
+    if not collect_only:
+        cleanup_callbacks.append(html_observer.finalize)
     input_acceptor: InputAcceptor = ConsoleInputAcceptor()
-    if config.getoption("pyprodtest_webui"):
+    if config.getoption("pyprodtest_webui") and not collect_only:
         web_ui = WebUi(
             host=config.getoption("--pyprodtest-webui-host"),
             port=config.getoption("--pyprodtest-webui-port"),
