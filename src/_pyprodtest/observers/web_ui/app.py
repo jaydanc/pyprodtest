@@ -8,6 +8,7 @@ from _pyprodtest.observers.web_ui.state import LiveState
 
 PICO_CSS = Path(__file__).parents[2] / "web_assets" / "pico.min.css"
 THEME_CSS = Path(__file__).parents[2] / "web_assets" / "theme.css"
+CHART_JS = Path(__file__).parents[2] / "web_assets" / "chart.umd.min.js"
 
 
 def create_app(state: LiveState, name: str = "Production test execution") -> Flask:
@@ -26,6 +27,10 @@ def create_app(state: LiveState, name: str = "Production test execution") -> Fla
     @app.get("/assets/theme.css")
     def theme_css() -> Response:
         return Response(THEME_CSS.read_bytes(), mimetype="text/css")
+
+    @app.get("/assets/chart.umd.min.js")
+    def chart_js() -> Response:
+        return Response(CHART_JS.read_bytes(), mimetype="application/javascript")
 
     @app.get("/api/state")
     def get_state() -> Response:

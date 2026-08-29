@@ -13,6 +13,7 @@ from _pyprodtest.test_record import TestRecord
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
 PICO_CSS = Path(__file__).parents[2] / "web_assets" / "pico.min.css"
 THEME_CSS = Path(__file__).parents[2] / "web_assets" / "theme.css"
+CHART_JS = Path(__file__).parents[2] / "web_assets" / "chart.umd.min.js"
 
 
 class HtmlObserver(TestObserver):
@@ -32,6 +33,7 @@ class HtmlObserver(TestObserver):
         self._template = environment.get_template("report.html")
         self._pico_css = PICO_CSS.read_text(encoding="utf-8")
         self._theme_css = THEME_CSS.read_text(encoding="utf-8")
+        self._chart_js = CHART_JS.read_text(encoding="utf-8")
 
     def on_tests_collected(self, test_records: Sequence[TestRecord]) -> None:
         self._test_records = list(test_records)
@@ -61,6 +63,7 @@ class HtmlObserver(TestObserver):
         return self._template.render(
             pico_css=self._pico_css,
             theme_css=self._theme_css,
+            chart_js=self._chart_js,
             test_records=self._test_records,
             total=total,
             outcomes=outcomes,

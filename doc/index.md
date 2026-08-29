@@ -1,14 +1,14 @@
-# Production tests operators can run, using tools developers already know
+# Unphased
 
-PyProdTest brings operator prompts, an always-current browser view, explicit
-test order, and durable reports to pytest—without creating a second test
+PyProdTest brings operator prompts, a live web view, charts,
+and detailed reports to pytest—without enforcing a cumbersome
 framework.
 
 [Get started](getting-started.md){ .md-button .md-button--primary }
 [View on GitHub](https://github.com/jaydanc/pyprodtest){ .md-button }
 
 <figure class="product-preview" markdown>
-  ![PyProdTest operator console waiting for a device serial number](assets/images/operator-console.png)
+  ![PyProdTest operator console waiting for a device serial number](assets/images/operator-console-v2.png)
   <figcaption>Follow the run, review test details, and respond to prompts from one operator console.</figcaption>
 </figure>
 
@@ -30,12 +30,13 @@ framework.
     Follow collection, progress, logs, failures, and active prompts while pytest
     runs.
 
--   :material-format-list-numbered:{ .lg .middle } **Controlled test plans**
+-   :material-chart-line:{ .lg .middle } **Live measurement charts**
 
     ---
 
-    Select and order files or node IDs in `pyprodtest.yaml`. Mistyped entries
-    fail clearly.
+    Stream timestamped values or explicit X/Y points from tests. Use a different
+    series name for each chart and retain the data in final reports. See the
+    [`measure` fixture](api.md#measure).
 
 -   :material-file-chart:{ .lg .middle } **Useful reports**
 
