@@ -1,9 +1,11 @@
 """Thread-safe state shared by pytest and the live web application."""
 
+from collections import Counter
 from dataclasses import asdict, dataclass
 from threading import Condition, Event, Lock
 from uuid import uuid4
 
+from _pyprodtest.config import ReportsConfig
 from _pyprodtest.test_record import TestRecord
 
 INPUT_WAIT_INTERVAL_SECONDS = 0.1
@@ -21,12 +23,15 @@ class InputRequest:
 class LiveState:
     """Own live records and coordinate blocking operator input."""
 
-    def __init__(self) -> None:
+    def __init__(self, reports: ReportsConfig | None = None) -> None:
         self._lock = Lock()
         self._input_ready = Condition(self._lock)
+        self._reports = reports or ReportsConfig()
         self._records: list[TestRecord] = []
         self._input_request: InputRequest | None = None
         self._input_response: str | bool | None = None
+        self._run_index = 1
+        self._history: list[dict[str, object]] = []
         self._run_complete = False
         self._client_seen = Event()
         self._completion_seen = Event()
@@ -35,10 +40,44 @@ class LiveState:
         with self._lock:
             self._records = records
 
+    def start_run(self, run_index: int) -> None:
+        """Publish the active run number for looped sessions."""
+        with self._lock:
+            self._run_index = run_index
+
+    def archive_current_run(self, run_index: int) -> None:
+        """Keep a final snapshot for one completed run in the live UI."""
+        with self._lock:
+            dut_id = self._reports.dut_id
+            tests = [asdict(record) for record in self._records]
+            self._history.insert(
+                0,
+                {
+                    "id": f"run-{run_index}",
+                    "label": dut_id or "Unknown DUT",
+                    "run_index": run_index,
+                    "dut_id": dut_id,
+                    "summary": _summarize(tests),
+                    "tests": tests,
+                },
+            )
+
     def snapshot(self) -> dict[str, object]:
         with self._lock:
+            dut_id = self._reports.dut_id
+            tests = [asdict(record) for record in self._records]
             snapshot = {
-                "tests": [asdict(record) for record in self._records],
+                "run_index": self._run_index,
+                "dut_id": dut_id,
+                "current_run": {
+                    "id": f"run-{self._run_index}",
+                    "label": dut_id or "Unknown DUT",
+                    "run_index": self._run_index,
+                    "dut_id": dut_id,
+                    "summary": _summarize(tests),
+                },
+                "history": list(self._history),
+                "tests": tests,
                 "input_request": (
                     asdict(self._input_request) if self._input_request else None
                 ),
@@ -104,3 +143,17 @@ class LiveState:
             self._input_response = value
             self._input_ready.notify()
             return True
+
+
+def _summarize(tests: list[dict[str, object]]) -> dict[str, int]:
+    outcomes = Counter(str(test.get("outcome", "pending")) for test in tests)
+    completed = sum(outcomes[outcome] for outcome in ("passed", "failed", "skipped"))
+    return {
+        "total": len(tests),
+        "complete": completed,
+        "passed": outcomes["passed"],
+        "failed": outcomes["failed"],
+        "skipped": outcomes["skipped"],
+        "pending": outcomes["pending"],
+        "running": outcomes["running"],
+    }

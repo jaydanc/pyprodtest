@@ -26,22 +26,10 @@
     </style>
   </head>
   <body>
-    <header class="app-header">
-      <div class="shell header-content">
-        <div class="brand">
-          <span class="brand-mark" aria-hidden="true">P</span>
-          <span><strong>PyProdTest</strong><small>Test report</small></span>
-        </div>
-        <div class="connection report-status">
-          <span class="connection-dot"></span><span>Report</span>
-        </div>
-      </div>
-    </header>
-
     <main class="shell workspace">
       <section class="run-overview" aria-labelledby="report-title">
         <div class="section-heading overview-heading">
-          <div><span class="eyebrow">Test run</span><h1 id="report-title">Production test report</h1></div>
+          <div><span class="eyebrow">Test run</span><h1 id="report-title">{{ dutId }}</h1></div>
           <div class="summary" aria-label="Run summary">
             <div class="summary-item"><strong>{{ completed }}</strong><span>Complete</span></div>
             <div class="summary-item passed"><strong>{{ outcomes.get("passed", 0) }}</strong><span>Passed</span></div>
@@ -191,6 +179,7 @@
           const data = isTime
             ? series.points.map((point) => point.y)
             : series.points;
+          const formatValue = (value, unit) => unit ? `${value} ${unit}` : `${value}`;
           new Chart(canvas, {
             type: "line",
             data: {
@@ -210,7 +199,22 @@
               animation: false,
               maintainAspectRatio: false,
               parsing: isTime,
-              plugins: { legend: { display: false }, tooltip: { displayColors: false } },
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    title: () => [],
+                    label: (context) => {
+                      const x = isTime ? context.label : context.parsed.x;
+                      return [
+                        `X: ${formatValue(x, series.xUnit)}`,
+                        `Y: ${formatValue(context.parsed.y, series.unit)}`,
+                      ];
+                    },
+                  },
+                  displayColors: false,
+                },
+              },
               scales: {
                 x: { type: isTime ? "category" : "linear", grid: { color: "rgba(158, 176, 195, 0.08)" }, title: { display: !isTime && Boolean(series.xUnit), text: series.xUnit, color: "#9eb0c3" }, ticks: { color: "#6f8297", maxTicksLimit: 7 } },
                 y: { grid: { color: "rgba(158, 176, 195, 0.08)" }, title: { display: Boolean(series.unit), text: series.unit, color: "#9eb0c3" }, ticks: { color: "#6f8297", maxTicksLimit: 6 } },

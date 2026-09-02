@@ -37,7 +37,7 @@ def test_startup(): ...
 
 ## pytest fixtures
 
-The plugin also registers three fixtures. They are supplied by pytest rather than
+The plugin also registers four fixtures. They are supplied by pytest rather than
 imported from `pyprodtest`.
 
 ### `input`
@@ -49,6 +49,15 @@ accepted: bool = input("Is the indicator green?", bool)
 
 Supported types are `str` and `bool`.
 
+### `dut`
+
+Set the device under test identifier used by reports and the live UI:
+
+```python
+def test_identify(dut) -> None:
+    dut("SN-1234")
+```
+
 ### `report`
 
 The session-scoped fixture exposes:
@@ -58,6 +67,7 @@ The session-scoped fixture exposes:
 | `path` | Output directory |
 | `name` | Extensionless report base name |
 | `enabled` | Whether any reports are written |
+| `dut_id` | Device under test identifier |
 
 ### `measure`
 

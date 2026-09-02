@@ -1,14 +1,14 @@
 import logging
 import time
 
-from pyprodtest import info, req, step
-from test.integration.fixture.device import Device
+import pytest
+
+from pyprodtest import info
 
 
+@pytest.mark.integration
 @info(name="Sensor Accuracy", desc="Test the sensor accuracy")
-@req("REQ-1234")
-@step("Run the sensor accuracy test")
-def test_chart(input, report, device: Device, measure) -> None:
+def test_chart(measure) -> None:
     for i in range(5):
         base_val = 30
         if i % 2 == 0:

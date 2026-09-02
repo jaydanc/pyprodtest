@@ -15,7 +15,7 @@ from the mechanism used to collect operator input.
 
 The pytest hooks collect metadata and lifecycle results into `TestRecord`
 instances. The core owns these records, captures logs, applies the configured
-test plan, and forwards lifecycle changes to observers. It also selects one
+test order, and forwards lifecycle changes to observers. It also selects one
 input acceptor for operator prompts.
 
 ### Test observers
@@ -46,7 +46,7 @@ those boundaries.
 ## Diagram update TODOs
 
 - [ ] Replace the old `WebServer` observer/provider box with the implemented
-  `WebUi`, `WebObserver`, `LiveState`, and `WebInputAcceptor` responsibilities.
+  `WebObserver`, `LiveState`, and `WebInputAcceptor` responsibilities.
 - [ ] Replace `TestInputProvider` with the current `InputAcceptor` interface and
   show both `WebInputAcceptor` and `ConsoleInputAcceptor` implementations.
 - [ ] Replace the obsolete `home.html`, `test.html`, and `measurement.html`
@@ -54,7 +54,7 @@ those boundaries.
 - [ ] Remove the SSE server and `sse_service.js`; the browser currently polls
   the JSON state endpoint and posts operator responses through Flask routes.
 - [ ] Show all report observers: HTML, JSON, CSV, and PDF, including their
-  shared `ReportSettings` and finalization at session shutdown.
+  shared `ReportsConfig` and finalization at session shutdown.
 - [ ] Update the core model to show `TestRecord` and captured logs rather than
   the older metadata/result/log split.
 - [ ] Add `pyprodtest.yaml` configuration and test-plan selection to the pytest

@@ -62,11 +62,22 @@ def test_measure_rejects_non_numeric_values_and_axis_name_collisions():
         measure.plot("Other sweep", x_unit=1)
 
 
-def test_measure_fixture_attaches_data_to_the_current_test(measure):
+def test_measure_fixture_attaches_data_to_the_current_test(measure, request):
     measure(3.3, "Supply", "V")
 
-    record = hooks._state.records[
-        "test_measure.py::test_measure_fixture_attaches_data_to_the_current_test"
-    ]
+    record = hooks._state.records[request.node.nodeid]
     assert record.measurements[0].points[0].y == 3.3
     assert record.measurements[0].unit == "V"
+
+
+def test_dut_fixture_sets_report_dut_identifier(dut):
+    try:
+        assert dut("SN-1234") == "SN-1234"
+        assert hooks._state.config.reports.dut_id == "SN-1234"
+    finally:
+        hooks._state.config.reports.dut_id = None
+
+
+def test_dut_fixture_rejects_non_string(dut):
+    with pytest.raises(TypeError, match="dut_id must be a string"):
+        dut(1234)

@@ -87,10 +87,9 @@ threshold with pytest's `--log-cli-level=LEVEL` option.
 
 ## Test ordering
 
-Without a configured plan, pytest's final collection order is used. For an
-explicit production sequence, list paths or node IDs under `tests` in
-`pyprodtest.yaml`. PyProdTest selects only those tests and preserves the listed
-order.
+Without `test_order`, pytest's final collection order is used. For an explicit
+production sequence, list filenames or filename node IDs under `test_order` in
+`pyprodtest.yaml`. PyProdTest moves matching tests into the listed order.
 
 Use this to inspect node IDs:
 
@@ -98,5 +97,5 @@ Use this to inspect node IDs:
 uv run pytest --collect-only -q
 ```
 
-An entry that matches no collected test raises an error, preventing a misspelled
-production test from being silently skipped.
+Entries that match no collected test are ignored. Collected tests that are not
+listed still run after the ordered tests in their normal pytest order.

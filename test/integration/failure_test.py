@@ -1,10 +1,10 @@
-from pyprodtest import info, req, step
-from test.integration.fixture.device import Device
+import pytest
+
+from pyprodtest import info
 
 
+@pytest.mark.integration
 @info(name="Failure example", desc="Demonstrate a failed production test")
-@req("REQ-9999")
-@step("Run the intentional failure")
-def test_failure(device: Device) -> None:
-    assert device.serial is not None
+def test_failure(input) -> None:
+    input("When this fails, check the error message looks okay and well formated", bool)
     assert False, "Intentional integration-test failure"

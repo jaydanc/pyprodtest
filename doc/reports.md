@@ -1,9 +1,9 @@
 # Reports
 
-PyProdTest writes enabled report formats at pytest session shutdown. Every
-format is derived from the same collected `TestRecord` state, including test
-metadata, lifecycle outcome, failure information, captured logs, and measured
-data.
+PyProdTest writes enabled report formats at pytest session shutdown, or after
+each completed pass when `loop: true` is configured. Every format is derived
+from the same collected `TestRecord` state, including test metadata, lifecycle
+outcome, failure information, captured logs, and measured data.
 
 HTML reports display each named measurement series as a chart. JSON reports
 preserve measurements as nested series and points. CSV reports store the same
@@ -35,9 +35,9 @@ def test_identify_device(input, report) -> None:
     report.enabled = True
 ```
 
-The latest fixture values at session shutdown are used by all report observers.
-Set `report.enabled = False` to suppress every report for that run. Individual
-format selection remains controlled by `pyprodtest.yaml`.
+The latest fixture values at the time reports are written are used by all report
+observers. Set `report.enabled = False` to suppress reports for that run.
+Individual format selection remains controlled by `pyprodtest.yaml`.
 
 ## Output path behavior
 
@@ -45,3 +45,20 @@ format selection remains controlled by `pyprodtest.yaml`.
 name. PyProdTest appends the session timestamp and the observer's extension.
 Create report directories outside source-controlled test fixtures when
 possible, and ignore them in version control.
+
+## Looped runs
+
+When `loop: true` is configured, reports are written after every full pass
+through the collected tests. PyProdTest keeps the session timestamped base name
+and inserts a zero-padded run suffix before the extension:
+
+```text
+reports/acceptance-20260829-140507-run-0001.html
+reports/acceptance-20260829-140507-run-0001.json
+reports/acceptance-20260829-140507-run-0002.html
+reports/acceptance-20260829-140507-run-0002.json
+```
+
+Session-scoped fixture finalizers run before these per-run reports are announced
+to observers and before the next pass starts. The next pass reinitializes
+session fixtures when tests request them again.

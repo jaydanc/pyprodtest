@@ -1,16 +1,19 @@
 """Pytest plugin hooks for capturing and forwarding test information."""
 
 import logging
-from collections.abc import Callable
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
 import pytest
 
-from _pyprodtest.config import PyProdTestConfig, apply_test_plan, load_config
-from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor, TestInput
-from _pyprodtest.measure import Measure
+from _pyprodtest.config import PyProdTestConfig, apply_test_order, load_config
+from _pyprodtest.fixtures import dut as dut
+from _pyprodtest.fixtures import input as input
+from _pyprodtest.fixtures import measure as measure
+from _pyprodtest.fixtures import report as report
+from _pyprodtest.input_acceptors import ConsoleInputAcceptor, InputAcceptor
 from _pyprodtest.observers import (
     CsvObserver,
     HtmlObserver,
@@ -18,8 +21,7 @@ from _pyprodtest.observers import (
     PdfObserver,
     TestObserver,
 )
-from _pyprodtest.observers.web_ui import WebUi
-from _pyprodtest.report_settings import ReportSettings
+from _pyprodtest.observers.web_ui.observer import WebObserver
 from _pyprodtest.test_record import CapturedLog, TestRecord
 
 LOGGER = logging.getLogger(__name__)
@@ -34,13 +36,23 @@ class PluginState:
     current_test_nodeid: str | None = None
     log_handler: logging.Handler | None = None
     input_acceptor: InputAcceptor = field(default_factory=ConsoleInputAcceptor)
-    report_settings: ReportSettings = field(default_factory=ReportSettings)
-    cleanup_callbacks: list[Callable[[], None]] = field(default_factory=list)
     config: PyProdTestConfig = field(default_factory=PyProdTestConfig)
+
+    def on_tests_start(self) -> None:
+        for observer in self.observers:
+            observer.on_tests_start()
 
     def on_tests_collected(self, test_records: list[TestRecord]) -> None:
         for observer in self.observers:
             observer.on_tests_collected(test_records)
+
+    def on_loop_tests_start(self, run_index: int) -> None:
+        for observer in self.observers:
+            observer.on_loop_tests_start(run_index)
+
+    def on_loop_tests_finished(self, run_index: int) -> None:
+        for observer in self.observers:
+            observer.on_loop_tests_finished(run_index)
 
     def on_test_run(self, test_record: TestRecord) -> None:
         for observer in self.observers:
@@ -50,53 +62,9 @@ class PluginState:
         for observer in self.observers:
             observer.on_test_end(test_record)
 
-
-_state: PluginState | None = None
-
-
-@pytest.fixture(scope="session")
-def report() -> ReportSettings:
-    """Return mutable settings for the final standalone HTML report."""
-    if _state is None:
-        raise RuntimeError("PyProdTest is not configured")
-    return _state.report_settings
-
-
-@pytest.fixture(scope="session")
-def input(request: pytest.FixtureRequest) -> TestInput:
-    """Return input from the acceptor selected by the plugin's run mode."""
-    if _state is None:
-        raise RuntimeError("PyProdTest is not configured")
-
-    def accept(prompt: str, input_type: type[str] | type[bool] = str) -> str | bool:
-        capture_manager = request.config.pluginmanager.get_plugin("capturemanager")
-        if capture_manager is None:
-            return _state.input_acceptor.accept(prompt, input_type)
-
-        # pytest's standard disabled-capture context leaves stdin blocked.
-        # Explicitly include stdin while suspending capture for the prompt.
-        capture_manager.suspend(in_=True)
-        try:
-            return _state.input_acceptor.accept(prompt, input_type)
-        finally:
-            capture_manager.resume()
-
-    return accept
-
-
-@pytest.fixture
-def measure(request: pytest.FixtureRequest) -> Measure:
-    """Record numeric data for the current test and live operator UI."""
-    if _state is None:
-        raise RuntimeError("PyProdTest is not configured")
-
-    def get_record() -> TestRecord:
-        record = _state.records.get(request.node.nodeid)
-        if record is None:
-            raise RuntimeError("The current test has no PyProdTest record")
-        return record
-
-    return Measure(get_record)
+    def on_tests_finished(self) -> None:
+        for observer in self.observers:
+            observer.on_tests_finished()
 
 
 class TestLogHandler(logging.Handler):
@@ -111,6 +79,16 @@ class TestLogHandler(logging.Handler):
             test_record.logs.append(CapturedLog.from_record(record))
 
 
+_state: PluginState | None = None
+
+
+def get_plugin_state() -> PluginState:
+    """Return the active PyProdTest plugin state."""
+    if _state is None:
+        raise RuntimeError("PyProdTest is not configured")
+    return _state
+
+
 def pytest_configure(config: pytest.Config) -> None:
     """Create isolated plugin state for this pytest session."""
     global _state
@@ -118,25 +96,23 @@ def pytest_configure(config: pytest.Config) -> None:
     _enable_live_logging(config)
 
     project_config = load_config(config.rootpath)
-    report_settings = ReportSettings.from_output_path(
-        _timestamped_report_output(project_config.reports.output)
+    project_config.reports.output = _timestamped_report_output(
+        project_config.reports.output
     )
+
     collect_only = config.getoption("--collect-only")
-    observers, cleanup_callbacks = _create_report_observers(
-        project_config, report_settings, collect_only=collect_only
-    )
+    observers = _create_report_observers(project_config)
     input_acceptor: InputAcceptor = ConsoleInputAcceptor()
     if project_config.ui.enabled and not collect_only:
-        web_ui = WebUi(
+        web_observer = WebObserver(
             host=project_config.ui.host,
             port=project_config.ui.port,
             name=project_config.name,
+            open_browser=True,
+            reports=project_config.reports,
         )
-        web_ui.start(open_browser=True)
-        LOGGER.info("PyProdTest web UI: %s", web_ui.url)
-        observers.append(web_ui.observer)
-        input_acceptor = web_ui.input_acceptor
-        cleanup_callbacks.append(web_ui.finish_and_stop)
+        observers.append(web_observer)
+        input_acceptor = web_observer.input_acceptor
 
     root_logger = logging.getLogger()
     handler = TestLogHandler()
@@ -148,66 +124,9 @@ def pytest_configure(config: pytest.Config) -> None:
         observers=observers,
         log_handler=handler,
         input_acceptor=input_acceptor,
-        report_settings=report_settings,
-        cleanup_callbacks=cleanup_callbacks,
         config=project_config,
     )
     LOGGER.debug("PyProdTest observers configured: %s", observers)
-
-
-def _timestamped_report_output(
-    output: str | Path, timestamp: datetime | None = None
-) -> Path:
-    """Append a filesystem-safe session timestamp to a report basename."""
-    output_path = Path(output)
-    timestamp = timestamp or datetime.now().astimezone()
-    suffix = timestamp.strftime("%Y%m%d-%H%M%S")
-    return output_path.parent / f"{output_path.name}-{suffix}"
-
-
-def _create_report_observers(
-    project_config: PyProdTestConfig,
-    report_settings: ReportSettings,
-    *,
-    collect_only: bool,
-) -> tuple[list[TestObserver], list[Callable[[], None]]]:
-    """Compose only the report observers enabled for this session."""
-    observers: list[TestObserver] = []
-    cleanup_callbacks: list[Callable[[], None]] = []
-
-    if project_config.reports.html:
-        html_observer = HtmlObserver(report_settings)
-        observers.append(html_observer)
-        if not collect_only:
-            cleanup_callbacks.append(html_observer.finalize)
-
-    if project_config.reports.json:
-        json_observer = JsonObserver(report_settings)
-        observers.append(json_observer)
-        if not collect_only:
-            cleanup_callbacks.append(json_observer.finalize)
-
-    if project_config.reports.csv:
-        csv_observer = CsvObserver(report_settings)
-        observers.append(csv_observer)
-        if not collect_only:
-            cleanup_callbacks.append(csv_observer.finalize)
-
-    if project_config.reports.pdf:
-        pdf_observer = PdfObserver(report_settings, project_config.name)
-        observers.append(pdf_observer)
-        if not collect_only:
-            cleanup_callbacks.append(pdf_observer.finalize)
-
-    return observers, cleanup_callbacks
-
-
-def _enable_live_logging(config: pytest.Config) -> None:
-    """Show INFO logs live unless the user configured another CLI level."""
-    if config.getoption("--log-cli-level") is not None:
-        return
-
-    config.option.log_cli_level = config.getini("log_cli_level") or "INFO"
 
 
 def pytest_unconfigure() -> None:
@@ -216,10 +135,41 @@ def pytest_unconfigure() -> None:
     if _state is not None and _state.log_handler is not None:
         root_logger = logging.getLogger()
         root_logger.removeHandler(_state.log_handler)
-    if _state is not None:
-        for cleanup in _state.cleanup_callbacks:
-            cleanup()
     _state = None
+
+
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """Notify observers that pytest is about to run tests."""
+    if _state is not None:
+        _state.on_tests_start()
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Notify observers that pytest has finished running tests."""
+    if _state is not None and not session.config.getoption("--collect-only"):
+        _state.on_tests_finished()
+
+
+def pytest_runtestloop(session: pytest.Session) -> bool | None:
+    """Optionally repeat the collected test sequence until pytest stops."""
+    if _state is None or not _state.config.loop:
+        return None
+
+    if session.testsfailed and not session.config.option.continue_on_collection_errors:
+        raise session.Interrupted(
+            f"{session.testsfailed} error{'s' if session.testsfailed != 1 else ''} during collection"
+        )
+
+    if session.config.option.collectonly:
+        return True
+
+    if not session.items:
+        return True
+
+    run_index = 1
+    while True:
+        _run_loop_iteration(session, run_index, _state)
+        run_index += 1
 
 
 def pytest_report_collectionfinish(items: list[pytest.Item]) -> None:
@@ -245,9 +195,9 @@ def pytest_report_collectionfinish(items: list[pytest.Item]) -> None:
 def pytest_collection_modifyitems(
     config: pytest.Config, items: list[pytest.Item]
 ) -> None:
-    """Apply an optional user-facing test plan to pytest's collected items."""
+    """Apply optional user-facing test ordering to pytest's collected items."""
     if _state is not None:
-        apply_test_plan(config, items, _state.config.tests)
+        apply_test_order(items, _state.config.test_order)
 
 
 def pytest_runtest_call(item: pytest.Item) -> None:
@@ -298,3 +248,92 @@ def _update_test_record(test_record: TestRecord, report: pytest.TestReport) -> N
         test_record.outcome = report.outcome
     elif report.skipped and test_record.outcome not in {"failed", "passed"}:
         test_record.outcome = "skipped"
+
+
+def _run_loop_iteration(
+    session: pytest.Session, run_index: int, state: PluginState
+) -> None:
+    """Run the collected item list once and publish loop-run lifecycle events."""
+    _reset_test_records(state.records.values())
+    state.config.reports.dut_id = None
+    state.current_test_nodeid = None
+
+    # WARNING; Do not reassign state.config config
+    # Revert report changes
+    disk_config = load_config(session.config.rootpath)
+    state.config.reports.output = _timestamped_report_output(disk_config.reports.output)
+    state.config.reports.name = disk_config.reports.name
+
+    state.on_loop_tests_start(run_index)
+
+    try:
+        for index, item in enumerate(session.items):
+            nextitem = (
+                session.items[index + 1] if index + 1 < len(session.items) else None
+            )
+            item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+            if session.shouldfail:
+                raise session.Failed(session.shouldfail)
+            if session.shouldstop:
+                raise session.Interrupted(session.shouldstop)
+    finally:
+        _teardown_remaining_session_state(session)
+
+    state.on_loop_tests_finished(run_index)
+
+
+def _reset_test_records(test_records: Iterable[TestRecord]) -> None:
+    """Clear runtime fields while preserving collected metadata."""
+    for test_record in test_records:
+        test_record.outcome = "pending"
+        test_record.duration = 0.0
+        test_record.failure_reason = ""
+        test_record.logs.clear()
+        test_record.measurements.clear()
+
+
+def _teardown_remaining_session_state(session: pytest.Session) -> None:
+    """Ensure session-scoped fixture finalizers run before the next loop pass."""
+    setup_state = getattr(session, "_setupstate", None)
+    if setup_state is not None:
+        setup_state.teardown_exact(None)
+
+
+def _timestamped_report_output(
+    output: str | Path, timestamp: datetime | None = None
+) -> Path:
+    """Append a filesystem-safe session timestamp to a report basename."""
+    output_path = Path(output)
+    timestamp = timestamp or datetime.now().astimezone()
+    suffix = timestamp.strftime("%Y%m%d-%H%M%S")
+    return output_path.parent / f"{output_path.name}-{suffix}"
+
+
+def _create_report_observers(
+    project_config: PyProdTestConfig,
+) -> list[TestObserver]:
+    """Compose only the report observers enabled for this session."""
+    observers: list[TestObserver] = []
+    reports = project_config.reports
+
+    if reports.html:
+        observers.append(HtmlObserver(reports))
+
+    if reports.json:
+        observers.append(JsonObserver(reports))
+
+    if reports.csv:
+        observers.append(CsvObserver(reports))
+
+    if reports.pdf:
+        observers.append(PdfObserver(reports))
+
+    return observers
+
+
+def _enable_live_logging(config: pytest.Config) -> None:
+    """Show INFO logs live unless the user configured another CLI level."""
+    if config.getoption("--log-cli-level") is not None:
+        return
+
+    config.option.log_cli_level = config.getini("log_cli_level") or "INFO"

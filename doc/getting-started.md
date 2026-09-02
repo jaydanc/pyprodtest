@@ -51,10 +51,15 @@ Create `pyprodtest.yaml` beside your project's `pyproject.toml`:
 
 ```yaml
 name: Device acceptance
+loop: false
 
-tests:
-  - test/test_device.py
+test_order:
+  - test_device.py
 ```
+
+Set `loop: true` when the same ordered test plan should repeat until pytest is
+stopped. In looped mode, session-scoped fixtures are cleaned up between passes
+and reports are written after each completed pass.
 
 Continue with [writing tests](writing-tests.md) or see every
 [configuration option](configuration.md).

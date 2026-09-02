@@ -11,10 +11,10 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer
 
+from _pyprodtest.config import ReportsConfig
 from _pyprodtest.observers.pdf_report.sections import test_section
 from _pyprodtest.observers.pdf_report.styles import report_styles, summary_table
 from _pyprodtest.observers.test_observer import TestObserver
-from _pyprodtest.report_settings import ReportSettings
 from _pyprodtest.test_record import TestRecord
 
 
@@ -23,16 +23,14 @@ class PdfObserver(TestObserver):
 
     def __init__(
         self,
-        settings: ReportSettings | str | Path,
-        title: str = "Production test report",
+        settings: ReportsConfig,
     ) -> None:
-        self.settings = (
-            settings
-            if isinstance(settings, ReportSettings)
-            else ReportSettings.from_output_path(settings)
-        )
-        self.title = title
+        self.settings = settings
         self._test_records: list[TestRecord] = []
+        self._wrote_run_report = False
+
+    def on_tests_start(self) -> None:
+        pass
 
     def on_tests_collected(self, test_records: Sequence[TestRecord]) -> None:
         self._test_records = list(test_records)
@@ -43,11 +41,28 @@ class PdfObserver(TestObserver):
     def on_test_end(self, test_record: TestRecord) -> None:
         pass
 
-    def finalize(self) -> None:
+    def on_loop_tests_start(self, run_index):
+        pass
+
+    def on_loop_tests_finished(self, run_index: int) -> None:
+        """Write one PDF report for a completed loop run."""
+        self._wrote_run_report = True
+        self._write(
+            self.settings.output_path.with_name(
+                f"{self.settings.output_path.stem}_run_{run_index}"
+            )
+        )
+
+    def on_tests_finished(self) -> None:
+        """Write the final PDF using the latest fixture settings."""
+        if self._wrote_run_report:
+            return
+        self._write(self.settings.output_path)
+
+    def _write(self, output_path: Path) -> None:
         """Write the final PDF using the latest fixture settings."""
         if not self.settings.enabled:
             return
-        output_path = self.settings.output_path
         if output_path.suffix.casefold() != ".pdf":
             output_path = output_path.parent / f"{output_path.name}.pdf"
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -61,7 +76,7 @@ class PdfObserver(TestObserver):
             leftMargin=18 * mm,
             topMargin=22 * mm,
             bottomMargin=18 * mm,
-            title=self.title,
+            title=self.settings.dut_id,
             author="PyProdTest",
         )
         document.build(
@@ -73,7 +88,7 @@ class PdfObserver(TestObserver):
     def _story(self, styles: dict[str, ParagraphStyle]) -> list[object]:
         outcomes = Counter(record.outcome for record in self._test_records)
         story: list[object] = [
-            Paragraph(escape(self.title), styles["title"]),
+            Paragraph(escape(self.settings.dut_id), styles["title"]),
             Paragraph("Production test report", styles["subtitle"]),
             Spacer(1, 7 * mm),
             summary_table(outcomes, len(self._test_records), styles),

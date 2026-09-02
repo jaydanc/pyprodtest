@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from _pyprodtest.config import ReportsConfig
 from _pyprodtest.observers import (
     CsvObserver,
     HtmlObserver,
@@ -11,7 +12,6 @@ from _pyprodtest.observers import (
     PdfObserver,
     TestObserver,
 )
-from _pyprodtest.report_settings import ReportSettings
 from _pyprodtest.test_record import (
     CapturedLog,
     MeasurementPoint,
@@ -49,7 +49,7 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
             )
         ],
     )
-    settings = ReportSettings.from_output_path(report_path)
+    settings = ReportsConfig(report_path)
     observer = HtmlObserver(settings)
 
     observer.on_tests_collected([record])
@@ -65,7 +65,7 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
     observer.on_test_end(record)
     settings.path = tmp_path / "final"
     settings.name = "renamed.html"
-    observer.finalize()
+    observer.on_tests_finished()
     report_path = tmp_path / "final" / "renamed.html"
     report = report_path.read_text(encoding="utf-8")
 
@@ -92,18 +92,18 @@ def test_html_observer_reports_lifecycle_and_escapes_content(tmp_path: Path):
     assert "2026-08-29T12:34:56.789+01:00" in report
 
 
-def test_html_observer_can_be_disabled_by_report_settings(tmp_path: Path):
-    settings = ReportSettings(path=tmp_path, enabled=False)
+def test_html_observer_can_be_disabled_by_report_config(tmp_path: Path):
+    settings = ReportsConfig(output=tmp_path / "pyprodtest-report", enabled=False)
     observer = HtmlObserver(settings)
     observer.on_tests_collected([TestRecord(name="Test")])
 
-    observer.finalize()
+    observer.on_tests_finished()
 
     assert not settings.output_path.exists()
 
 
 def test_json_and_csv_observers_preserve_test_records(tmp_path: Path):
-    settings = ReportSettings(path=tmp_path, name="results")
+    settings = ReportsConfig(output=tmp_path / "results")
     record = TestRecord(
         name="Device test",
         requirements=["REQ-1"],
@@ -130,7 +130,7 @@ def test_json_and_csv_observers_preserve_test_records(tmp_path: Path):
     observers = [JsonObserver(settings), CsvObserver(settings)]
     for observer in observers:
         observer.on_tests_collected([record])
-        observer.finalize()
+        observer.on_tests_finished()
 
     json_report = json.loads((tmp_path / "results.json").read_text(encoding="utf-8"))
     assert json_report["summary"] == {"total": 1, "outcomes": {"passed": 1}}
@@ -157,8 +157,54 @@ def test_json_and_csv_observers_preserve_test_records(tmp_path: Path):
     assert measurements[1]["x_unit"] == "DAC"
 
 
+def test_report_observers_write_one_artifact_per_completed_loop_run(tmp_path: Path):
+    settings = ReportsConfig(output=tmp_path / "loop-results")
+    record = TestRecord(name="Device test", outcome="passed", duration=0.5)
+    observers = [
+        HtmlObserver(settings),
+        JsonObserver(settings),
+        CsvObserver(settings),
+        PdfObserver(settings),
+    ]
+
+    for observer in observers:
+        observer.on_tests_collected([record])
+
+    for observer in observers:
+        observer.on_loop_tests_finished(1)
+
+    record.outcome = "failed"
+    record.failure_reason = "Second run failed"
+    for observer in observers:
+        observer.on_loop_tests_finished(2)
+        observer.on_tests_finished()
+
+    expected_reports = [
+        tmp_path / "loop-results-run-0001.html",
+        tmp_path / "loop-results-run-0001.json",
+        tmp_path / "loop-results-run-0001.csv",
+        tmp_path / "loop-results-run-0001.pdf",
+        tmp_path / "loop-results-run-0002.html",
+        tmp_path / "loop-results-run-0002.json",
+        tmp_path / "loop-results-run-0002.csv",
+        tmp_path / "loop-results-run-0002.pdf",
+    ]
+    for report in expected_reports:
+        assert report.exists()
+
+    assert not (tmp_path / "loop-results.html").exists()
+    first_json = json.loads(
+        (tmp_path / "loop-results-run-0001.json").read_text(encoding="utf-8")
+    )
+    second_json = json.loads(
+        (tmp_path / "loop-results-run-0002.json").read_text(encoding="utf-8")
+    )
+    assert first_json["tests"][0]["outcome"] == "passed"
+    assert second_json["tests"][0]["outcome"] == "failed"
+
+
 def test_pdf_observer_writes_report_with_test_content(tmp_path: Path):
-    settings = ReportSettings(path=tmp_path, name="results")
+    settings = ReportsConfig(output=tmp_path / "results")
     observer = PdfObserver(settings, "Device acceptance")
     observer.on_tests_collected(
         [
@@ -197,7 +243,7 @@ def test_pdf_observer_writes_report_with_test_content(tmp_path: Path):
         ]
     )
 
-    observer.finalize()
+    observer.on_tests_finished()
 
     report = tmp_path / "results.pdf"
     assert report.read_bytes().startswith(b"%PDF-")

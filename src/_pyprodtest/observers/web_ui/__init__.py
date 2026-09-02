@@ -1,5 +1,5 @@
 """Live web UI composition."""
 
-from _pyprodtest.observers.web_ui.server import WebUi
+from _pyprodtest.observers.web_ui.observer import WebObserver
 
-__all__ = ["WebUi"]
+__all__ = ["WebObserver"]
