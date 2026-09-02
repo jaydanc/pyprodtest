@@ -51,10 +51,11 @@ Create `pyprodtest.yaml` beside your project's `pyproject.toml`:
 
 ```yaml
 name: Device acceptance
+loop: false
 
-tests:
-  - test/test_device.py
+test_order:
+  - test_device.py
 ```
 
-Continue with [writing tests](writing-tests.md) or see every
-[configuration option](configuration.md).
+Continue with [writing tests](writing-tests.md), review every [configuration
+option](configuration.md), or learn how to organize [reports by DUT](reports.md#put-each-dut-report-in-its-own-folder).

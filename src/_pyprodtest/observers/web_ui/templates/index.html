@@ -8,46 +8,232 @@
     <link rel="stylesheet" href="/assets/theme.css">
     <script defer src="/assets/chart.umd.min.js"></script>
     <script type="module" src="{{ url_for('static', filename='app.js') }}"></script>
+    <script defer src="/assets/alpine.min.js"></script>
   </head>
-  <body>
+  <body x-data="pyprodtestDashboard()" x-init="start()">
     <header class="app-header">
       <div class="shell header-content">
         <a class="brand" href="/" aria-label="PyProdTest home">
           <span class="brand-mark" aria-hidden="true">P</span>
-          <span><strong>PyProdTest</strong><small>Operator console</small></span>
+          <span><strong>{{name}}</strong><small>PyProdTest</small></span>
         </a>
-        <div id="connection" class="connection connection-waiting" aria-live="polite">
-          <span class="connection-dot"></span><span>Connecting</span>
+        <div class="connection" :class="`connection-${connectionStatus}`" aria-live="polite">
+          <span class="connection-dot"></span><span x-text="connectionLabel"></span>
         </div>
       </div>
     </header>
 
     <main class="shell workspace">
+      <div class="run-layout">
+        <aside class="history-sidebar" aria-labelledby="history-title">
+          <div class="history-heading">
+            <span class="eyebrow">History</span>
+            <h2 id="history-title">Runs</h2>
+          </div>
+          <div class="history-list">
+            <div class="history-run history-run-active">
+              <span class="history-kicker">Active</span>
+              <strong x-text="currentRun?.label || 'Unknown DUT'"></strong>
+              <small x-text="runSummaryText(currentRun?.summary)"></small>
+            </div>
+            <div class="empty-history" x-show="!history.length">No previous runs yet</div>
+            <template x-for="run in history" :key="run.id">
+              <details class="history-run">
+                <summary>
+                  <span>
+                    <strong x-text="run.label"></strong>
+                    <small x-text="runSummaryText(run.summary)"></small>
+                  </span>
+                  <span class="chevron" aria-hidden="true">⌄</span>
+                </summary>
+                <ol class="history-results">
+                  <template x-for="test in run.tests" :key="`${run.id}-${test.nodeid || test.name}`">
+                    <li>
+                      <span class="status-icon" :class="statusName(test.outcome)" x-text="statusIcon(test.outcome)"></span>
+                      <span>
+                        <strong x-text="test.name"></strong>
+                        <small x-text="formatDuration(test.duration)"></small>
+                      </span>
+                    </li>
+                  </template>
+                </ol>
+              </details>
+            </template>
+          </div>
+        </aside>
+
+        <div class="run-main">
       <section class="run-overview" aria-labelledby="run-title">
         <div class="section-heading overview-heading">
-          <div><span class="eyebrow">Test run</span><h1 id="run-title">{{ name }}</h1></div>
-          <div id="summary" class="summary" aria-label="Run summary"></div>
+          <div><span class="eyebrow">Test run</span><h1 id="run-title" x-text="dutId">Unknown DUT</h1></div>
+          <div class="summary" aria-label="Run summary">
+            <template x-for="item in summaryItems" :key="item.label">
+              <div class="summary-item" :class="item.className">
+                <strong x-text="item.value"></strong><span x-text="item.label"></span>
+              </div>
+            </template>
+          </div>
         </div>
-        <div class="progress-track" aria-label="Test progress"><span id="progress-bar"></span></div>
+        <div class="progress-track" aria-label="Test progress"><span :style="{ width: `${progress}%` }"></span></div>
       </section>
 
-      <section id="input-panel" class="operator-panel" hidden aria-live="assertive"></section>
+      <section class="operator-panel" x-show="inputRequest" x-cloak aria-live="assertive" :aria-busy="submittingInput">
+        <div class="operator-card" x-show="inputRequest">
+          <div class="operator-copy">
+            <span class="operator-icon" aria-hidden="true">?</span>
+            <div>
+              <span class="eyebrow active-eyebrow">Action required</span>
+              <h2>Operator input</h2>
+              <p class="operator-prompt">
+                <template x-for="(line, index) in promptLines(inputRequest?.prompt)" :key="index">
+                  <span><br x-show="index > 0"><span x-text="line"></span></span>
+                </template>
+              </p>
+            </div>
+          </div>
+          <div class="operator-controls">
+            <div role="group" x-show="inputRequest?.input_type === 'bool'">
+              <button type="button" @click="submitInput(true)" :aria-disabled="submittingInput">Yes, continue</button>
+              <button type="button" class="secondary" @click="submitInput(false)" :aria-disabled="submittingInput">No</button>
+            </div>
+            <form x-show="inputRequest?.input_type !== 'bool'" @submit.prevent="submitInput(inputValue)">
+              <input x-ref="operatorInput" x-model="inputValue" name="value" required autocomplete="off" placeholder="Enter response">
+              <button type="submit" :aria-disabled="submittingInput">Submit</button>
+            </form>
+          </div>
+        </div>
+      </section>
 
-      <section id="active-section" hidden aria-labelledby="active-title">
+      <section id="active-section" x-show="activeTest" x-cloak aria-labelledby="active-title">
         <div class="section-heading">
           <div><span class="eyebrow active-eyebrow">In progress</span><h2 id="active-title">Current test</h2></div>
           <span class="live-indicator"><span></span>Live</span>
         </div>
-        <div id="active-test"></div>
+        <template x-if="activeTest">
+          <article class="active-card">
+            <header class="active-card-header">
+              <div>
+                <h3 x-text="activeTest.name"></h3>
+                <p class="description" x-show="activeTest.description" x-text="activeTest.description"></p>
+                <div class="test-meta">
+                  <code x-text="activeTest.nodeid"></code>
+                  <span x-text="`Elapsed ${formatDuration(liveDuration(activeTest))}`"></span>
+                </div>
+              </div>
+              <span :class="badgeClass(activeTest)" x-text="statusName(activeTest.outcome)"></span>
+            </header>
+            <div class="active-content">
+              <aside class="test-context">
+                <div class="context-block">
+                  <h4>Requirements</h4>
+                  <div class="requirement-list" x-show="contextList(activeTest.requirements).length">
+                    <template x-for="requirement in contextList(activeTest.requirements)" :key="requirement">
+                      <span class="requirement" x-text="requirement"></span>
+                    </template>
+                  </div>
+                  <span class="empty-context" x-show="!contextList(activeTest.requirements).length">No requirements attached</span>
+                </div>
+                <div class="context-block">
+                  <h4>Procedure</h4>
+                  <ol x-show="contextList(activeTest.steps).length">
+                    <template x-for="step in contextList(activeTest.steps)" :key="step">
+                      <li x-text="step"></li>
+                    </template>
+                  </ol>
+                  <span class="empty-context" x-show="!contextList(activeTest.steps).length">No operator steps defined</span>
+                </div>
+              </aside>
+              <section class="log-console" aria-label="Live logs">
+                <div class="log-header"><span>Live output</span><span class="log-count" x-text="activeTest.logs.length"></span></div>
+                <ul class="log-stream" x-init="$watch('activeTest.logs.length', () => $nextTick(() => { $el.scrollTop = $el.scrollHeight }))">
+                  <li class="empty-log" x-show="!activeTest.logs.length" x-text="logMessage(activeTest.logs, true)"></li>
+                  <template x-for="log in activeTest.logs" :key="`${log.timestamp}-${log.level}-${log.message}`">
+                    <li class="log-row">
+                      <span class="log-time" x-text="formatTime(log.timestamp)"></span>
+                      <span class="log-level" x-text="log.level"></span>
+                      <span class="log-source" x-text="log.logger"></span>
+                      <span class="log-message" x-text="log.message"></span>
+                    </li>
+                  </template>
+                </ul>
+              </section>
+            </div>
+            <section class="measurements" x-show="activeTest.measurements.length" aria-label="Measured data">
+              <div class="measurement-heading"><span>Measured data</span><span x-text="`${activeTest.measurements.length} series`"></span></div>
+              <div class="measurement-grid">
+                <template x-for="series in activeTest.measurements" :key="series.name">
+                  <article class="measurement-card">
+                    <div class="measurement-summary">
+                      <div><span class="measurement-name" x-text="series.name"></span><small x-text="chartsSeriesDescription(series)"></small></div>
+                      <div class="measurement-latest"><strong x-text="chartsLatestMeasurement(series)"></strong><small>Latest</small></div>
+                    </div>
+                    <div class="chart-wrap"><canvas :data-chart-key="chartsKey(activeTest, series)" :aria-label="`${series.name} chart`" role="img"></canvas></div>
+                  </article>
+                </template>
+              </div>
+            </section>
+          </article>
+        </template>
       </section>
 
       <section class="test-list-section" aria-labelledby="test-list-title">
         <div class="section-heading">
           <div><span class="eyebrow">Run details</span><h2 id="test-list-title">Tests</h2></div>
-          <span id="test-list-count" class="muted-count"></span>
+          <span class="muted-count" x-text="`${tests.length} ${tests.length === 1 ? 'test' : 'tests'}`"></span>
         </div>
-        <div id="tests" class="test-list"><div class="empty-state" aria-busy="true">Waiting for collection…</div></div>
+        <div class="test-list">
+          <div class="empty-state" x-show="!tests.length" aria-busy="true">Waiting for collection...</div>
+          <template x-for="test in tests" :key="test.nodeid || test.name">
+            <details class="test-row" :class="`test-row-${statusName(test.outcome)}`" @toggle="$nextTick(() => chartsRefresh($el))">
+              <summary>
+                <span class="status-icon" :class="statusName(test.outcome)" x-text="statusIcon(test.outcome)"></span>
+                <span class="test-row-title">
+                  <strong x-text="test.name"></strong>
+                  <small x-text="test.description || test.nodeid"></small>
+                </span>
+                <span class="duration" x-text="formatDuration(liveDuration(test))"></span>
+                <span :class="badgeClass(test)" x-text="statusName(test.outcome)"></span>
+                <span class="chevron" aria-hidden="true">⌄</span>
+              </summary>
+              <div class="test-details">
+                <div class="test-meta"><code x-text="test.nodeid"></code></div>
+                <div class="log-header"><span>Captured logs</span><span class="log-count" x-text="test.logs.length"></span></div>
+                <ul class="log-stream">
+                  <li class="empty-log" x-show="!test.logs.length" x-text="logMessage(test.logs)"></li>
+                  <template x-for="log in test.logs" :key="`${log.timestamp}-${log.level}-${log.message}`">
+                    <li class="log-row">
+                      <span class="log-time" x-text="formatTime(log.timestamp)"></span>
+                      <span class="log-level" x-text="log.level"></span>
+                      <span class="log-source" x-text="log.logger"></span>
+                      <span class="log-message" x-text="log.message"></span>
+                    </li>
+                  </template>
+                </ul>
+                <section class="measurements" x-show="test.measurements.length" aria-label="Measured data">
+                  <div class="measurement-heading"><span>Measured data</span><span x-text="`${test.measurements.length} series`"></span></div>
+                  <div class="measurement-grid">
+                    <template x-for="series in test.measurements" :key="series.name">
+                      <article class="measurement-card">
+                        <div class="measurement-summary">
+                          <div><span class="measurement-name" x-text="series.name"></span><small x-text="chartsSeriesDescription(series)"></small></div>
+                          <div class="measurement-latest"><strong x-text="chartsLatestMeasurement(series)"></strong><small>Latest</small></div>
+                        </div>
+                        <div class="chart-wrap"><canvas :data-chart-key="chartsKey(test, series)" :aria-label="`${series.name} chart`" role="img"></canvas></div>
+                      </article>
+                    </template>
+                  </div>
+                </section>
+                <div class="failure" x-show="test.failure_reason">
+                  <strong>Failure details</strong>
+                  <pre><code x-text="test.failure_reason"></code></pre>
+                </div>
+              </div>
+            </details>
+          </template>
+        </div>
       </section>
+        </div>
+      </div>
     </main>
   </body>
 </html>

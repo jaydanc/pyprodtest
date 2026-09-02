@@ -1,19 +1,19 @@
 import logging
-from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
+
+import pytest
 
 from _pyprodtest import hooks
 from _pyprodtest.config import (
     DEFAULT_UI_NAME,
     PyProdTestConfig,
     ReportsConfig,
-    apply_test_plan,
+    apply_test_order,
     load_config,
 )
 from _pyprodtest.observers import JsonObserver
-from _pyprodtest.report_settings import ReportSettings
-from _pyprodtest.test_record import TestRecord
+from _pyprodtest.test_record import CapturedLog, MeasurementSeries, TestRecord
 
 
 def test_failed_report_captures_failure_reason():
@@ -79,35 +79,44 @@ def test_live_logging_preserves_explicit_cli_level():
     assert config.option.log_cli_level == "DEBUG"
 
 
-def test_yaml_plan_selects_and_orders_files_and_node_ids(tmp_path: Path):
+def test_yaml_test_order_orders_matching_filenames_and_leaves_the_rest(tmp_path: Path):
     (tmp_path / "pyprodtest.yaml").write_text(
-        "tests:\n  - test/test_integration.py\n  - test/test_hooks.py::test_second\n",
+        "test_order:\n  - test_device.py\n  - missing_test.py\n  - test_hooks.py::test_second\n",
         encoding="utf-8",
     )
-    deselected = []
-    config = SimpleNamespace(
-        hook=SimpleNamespace(pytest_deselected=lambda items: deselected.extend(items))
-    )
     items = [
-        SimpleNamespace(nodeid="test/test_hooks.py::test_first"),
-        SimpleNamespace(nodeid="test/test_integration.py::test_input"),
-        SimpleNamespace(nodeid="test/test_hooks.py::test_second"),
-        SimpleNamespace(nodeid="test/test_integration.py::test_output"),
+        SimpleNamespace(
+            path=tmp_path / "test" / "test_hooks.py",
+            nodeid="test/test_hooks.py::test_first",
+        ),
+        SimpleNamespace(
+            path=tmp_path / "integration" / "test_device.py",
+            nodeid="test/integration/test_device.py::test_input",
+        ),
+        SimpleNamespace(
+            path=tmp_path / "test" / "test_hooks.py",
+            nodeid="test/test_hooks.py::test_second",
+        ),
+        SimpleNamespace(
+            path=tmp_path / "test" / "test_other.py",
+            nodeid="test/test_other.py::test_output",
+        ),
     ]
 
-    apply_test_plan(config, items, load_config(tmp_path).tests)
+    apply_test_order(items, load_config(tmp_path).test_order)
 
     assert [item.nodeid for item in items] == [
-        "test/test_integration.py::test_input",
-        "test/test_integration.py::test_output",
+        "test/integration/test_device.py::test_input",
         "test/test_hooks.py::test_second",
+        "test/test_hooks.py::test_first",
+        "test/test_other.py::test_output",
     ]
-    assert [item.nodeid for item in deselected] == ["test/test_hooks.py::test_first"]
 
 
 def test_yaml_configures_name_ui_and_report_formats(tmp_path: Path):
     (tmp_path / "pyprodtest.yaml").write_text(
         """name: Device acceptance
+loop: true
 ui:
   enabled: false
   host: 0.0.0.0
@@ -118,7 +127,7 @@ reports:
   json: false
   csv: false
   pdf: true
-tests:
+test_order:
   - test/device_test.py
 """,
         encoding="utf-8",
@@ -127,6 +136,7 @@ tests:
     config = load_config(tmp_path)
 
     assert config.name == "Device acceptance"
+    assert config.loop is True
     assert config.ui.enabled is False
     assert config.ui.host == "0.0.0.0"
     assert config.ui.port == 9000
@@ -141,7 +151,8 @@ def test_ui_title_has_default_without_yaml(tmp_path: Path):
     config = load_config(tmp_path)
 
     assert config.name == DEFAULT_UI_NAME
-    assert config.tests is None
+    assert config.loop is False
+    assert config.test_order is None
     assert config.ui.enabled is True
     assert config.reports.html is True
     assert config.reports.json is True
@@ -149,23 +160,119 @@ def test_ui_title_has_default_without_yaml(tmp_path: Path):
     assert config.reports.pdf is True
 
 
+def test_loop_config_must_be_boolean(tmp_path: Path):
+    (tmp_path / "pyprodtest.yaml").write_text("loop: forever\n", encoding="utf-8")
+
+    with pytest.raises(pytest.UsageError, match="'loop' must be true or false"):
+        load_config(tmp_path)
+
+
 def test_only_enabled_report_observers_are_composed():
     config = PyProdTestConfig(
         reports=ReportsConfig(html=False, json=True, csv=False, pdf=False)
     )
 
-    observers, cleanup_callbacks = hooks._create_report_observers(
-        config, ReportSettings(), collect_only=False
-    )
+    observers = hooks._create_report_observers(config)
 
     assert len(observers) == 1
     assert isinstance(observers[0], JsonObserver)
-    assert cleanup_callbacks == [observers[0].finalize]
 
 
-def test_report_output_has_session_timestamp_appended():
-    timestamp = datetime(2026, 8, 29, 14, 5, 7, tzinfo=timezone.utc)
+def test_loop_iteration_resets_records_and_runs_items_once():
+    events = []
+    calls = []
+    state = hooks.PluginState(
+        records={
+            "test_a": TestRecord(
+                name="A",
+                nodeid="test_a",
+                outcome="failed",
+                duration=1.2,
+                failure_reason="old failure",
+                logs=[CapturedLog("now", "INFO", "test", "old")],
+                measurements=[MeasurementSeries("voltage", "time")],
+            ),
+            "test_b": TestRecord(name="B", nodeid="test_b", outcome="passed"),
+        },
+        observers=[
+            SimpleNamespace(
+                on_loop_tests_start=lambda run_index: events.append(
+                    ("start", run_index)
+                ),
+                on_loop_tests_finished=lambda run_index: events.append(
+                    ("finished", run_index)
+                ),
+            )
+        ],
+    )
+    state.config.reports.dut_id = "SN-1234"
 
-    output = hooks._timestamped_report_output("reports/device", timestamp)
+    class Hook:
+        def pytest_runtest_protocol(self, item, nextitem):
+            calls.append((item.nodeid, nextitem.nodeid if nextitem else None))
+            state.records[item.nodeid].outcome = "passed"
 
-    assert output == Path("reports/device-20260829-140507")
+    hook = Hook()
+    items = [
+        SimpleNamespace(nodeid="test_a", config=SimpleNamespace(hook=hook)),
+        SimpleNamespace(nodeid="test_b", config=SimpleNamespace(hook=hook)),
+    ]
+    session = SimpleNamespace(
+        items=items,
+        shouldfail=None,
+        shouldstop=None,
+        Failed=RuntimeError,
+        Interrupted=RuntimeError,
+    )
+
+    hooks._run_loop_iteration(session, 3, state)
+
+    assert events == [("start", 3), ("finished", 3)]
+    assert calls == [("test_a", "test_b"), ("test_b", None)]
+    assert state.config.reports.dut_id is None
+    assert state.current_test_nodeid is None
+    assert state.records["test_a"].outcome == "passed"
+    assert state.records["test_a"].duration == 0.0
+    assert state.records["test_a"].failure_reason == ""
+    assert state.records["test_a"].logs == []
+    assert state.records["test_a"].measurements == []
+
+
+def test_loop_iteration_tears_down_session_state_before_notifying_observers():
+    events = []
+
+    class SetupState:
+        def teardown_exact(self, nextitem):
+            assert nextitem is None
+            events.append("teardown")
+
+    state = hooks.PluginState(
+        records={"test_a": TestRecord(name="A", nodeid="test_a")},
+        observers=[
+            SimpleNamespace(
+                on_loop_tests_start=lambda run_index: events.append("start"),
+                on_loop_tests_finished=lambda run_index: events.append("finished"),
+            )
+        ],
+    )
+
+    class Hook:
+        def pytest_runtest_protocol(self, item, nextitem):
+            events.append("test")
+
+    item = SimpleNamespace(
+        nodeid="test_a",
+        config=SimpleNamespace(hook=Hook()),
+    )
+    session = SimpleNamespace(
+        items=[item],
+        shouldfail=None,
+        shouldstop=None,
+        Failed=RuntimeError,
+        Interrupted=RuntimeError,
+        _setupstate=SetupState(),
+    )
+
+    hooks._run_loop_iteration(session, 1, state)
+
+    assert events == ["start", "test", "teardown", "finished"]
