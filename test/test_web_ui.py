@@ -94,9 +94,11 @@ def test_web_observer_keeps_completed_run_history_for_looped_runs():
 
     snapshot = state.snapshot()
 
-    assert snapshot["current_run"]["label"] == "Run 2"
+    assert snapshot["current_run"]["label"] == "Unknown DUT"
+    assert snapshot["current_run"]["run_index"] == 2
     assert snapshot["current_run"]["summary"]["pending"] == 1
-    assert snapshot["history"][0]["label"] == "Run 1"
+    assert snapshot["history"][0]["label"] == "Unknown DUT"
+    assert snapshot["history"][0]["run_index"] == 1
     assert snapshot["history"][0]["summary"]["passed"] == 1
     assert snapshot["history"][0]["tests"][0]["outcome"] == "passed"
 
@@ -200,8 +202,8 @@ def test_web_page_serves_packaged_ui_and_pico_css():
     assert b"history.length" in page
     assert b"operator-prompt" in page
     assert b"promptLines(inputRequest?.prompt)" in page
-    assert b"dutId || 'Operator console'" in page
-    assert b'x-text="runTitle"' in page
+    assert b"currentRun?.label || 'Unknown DUT'" in page
+    assert b'x-text="dutId"' in page
     assert b'<br x-show="index > 0">' in page
     assert b"--pico-font-family" in client.get("/assets/pico.min.css").data
     assert b"--app-bg" in client.get("/assets/theme.css").data
@@ -220,9 +222,7 @@ def test_web_page_serves_packaged_ui_and_pico_css():
     assert b"import {" in app_js.data
     assert b'from "./charts.js"' in app_js.data
     assert b"window.pyprodtestDashboard" in app_js.data
-    assert b"defaultRunTitle" in app_js.data
-    assert b"dutId = state.dut_id || null" in app_js.data
-    assert b"document.title = `${this.runTitle}" in app_js.data
+    assert b'dutId = state.dut_id || "Unknown DUT"' in app_js.data
     assert b"promptLines" in app_js.data
     assert b"runSummaryText" in app_js.data
     assert b"data-chart-key" in page
@@ -280,7 +280,7 @@ def test_web_page_uses_configured_name_in_heading_and_browser_title():
     assert (
         b"<title>Device &lt;Acceptance&gt; \xc2\xb7 PyProdTest</title>" in response.data
     )
-    assert b'<h1 id="run-title" x-text="runTitle">Unknown DUT</h1>' in response.data
+    assert b'<h1 id="run-title" x-text="dutId">Unknown DUT</h1>' in response.data
 
 
 def test_final_state_is_available_before_server_shutdown():

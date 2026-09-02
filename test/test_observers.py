@@ -157,7 +157,9 @@ def test_json_and_csv_observers_preserve_test_records(tmp_path: Path):
     assert measurements[1]["x_unit"] == "DAC"
 
 
-def test_report_observers_write_one_artifact_per_completed_loop_run(tmp_path: Path):
+def test_report_observers_use_latest_output_for_each_completed_loop_run(
+    tmp_path: Path,
+):
     settings = ReportsConfig(output=tmp_path / "loop-results")
     record = TestRecord(name="Device test", outcome="passed", duration=0.5)
     observers = [
@@ -173,39 +175,30 @@ def test_report_observers_write_one_artifact_per_completed_loop_run(tmp_path: Pa
     for observer in observers:
         observer.on_loop_tests_finished(1)
 
+    settings.output = tmp_path / "second-loop-results"
     record.outcome = "failed"
     record.failure_reason = "Second run failed"
     for observer in observers:
         observer.on_loop_tests_finished(2)
         observer.on_tests_finished()
 
-    expected_reports = [
-        tmp_path / "loop-results-run-0001.html",
-        tmp_path / "loop-results-run-0001.json",
-        tmp_path / "loop-results-run-0001.csv",
-        tmp_path / "loop-results-run-0001.pdf",
-        tmp_path / "loop-results-run-0002.html",
-        tmp_path / "loop-results-run-0002.json",
-        tmp_path / "loop-results-run-0002.csv",
-        tmp_path / "loop-results-run-0002.pdf",
-    ]
-    for report in expected_reports:
-        assert report.exists()
+    for extension in ("html", "json", "csv", "pdf"):
+        assert (tmp_path / f"loop-results.{extension}").exists()
+        assert (tmp_path / f"second-loop-results.{extension}").exists()
 
-    assert not (tmp_path / "loop-results.html").exists()
     first_json = json.loads(
-        (tmp_path / "loop-results-run-0001.json").read_text(encoding="utf-8")
+        (tmp_path / "loop-results.json").read_text(encoding="utf-8")
     )
     second_json = json.loads(
-        (tmp_path / "loop-results-run-0002.json").read_text(encoding="utf-8")
+        (tmp_path / "second-loop-results.json").read_text(encoding="utf-8")
     )
     assert first_json["tests"][0]["outcome"] == "passed"
     assert second_json["tests"][0]["outcome"] == "failed"
 
 
 def test_pdf_observer_writes_report_with_test_content(tmp_path: Path):
-    settings = ReportsConfig(output=tmp_path / "results")
-    observer = PdfObserver(settings, "Device acceptance")
+    settings = ReportsConfig(output=tmp_path / "results", dut_id="SN-1234")
+    observer = PdfObserver(settings)
     observer.on_tests_collected(
         [
             TestRecord(
