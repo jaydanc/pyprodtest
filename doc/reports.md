@@ -25,7 +25,8 @@ reports:
 
 ## Adjust the output during a run
 
-The session-scoped `report` fixture changes the final destination:
+The session-scoped `report` fixture changes the destination for all enabled
+formats:
 
 ```python
 def test_identify_device(input, report) -> None:
@@ -35,30 +36,78 @@ def test_identify_device(input, report) -> None:
     report.enabled = True
 ```
 
-The latest fixture values at the time reports are written are used by all report
-observers. Set `report.enabled = False` to suppress reports for that run.
-Individual format selection remains controlled by `pyprodtest.yaml`.
+The observers use the latest values when they write. Set
+`report.enabled = False` to suppress the current run; format selection remains
+in `pyprodtest.yaml`.
+
+## Put each DUT report in its own folder
+
+The `dut` fixture gives the device under test (DUT) a human-readable identifier
+in the live UI and generated reports. Combine it with the `report` fixture when
+the identifier should also determine the output path:
+
+```python
+from datetime import datetime
+from pathlib import Path
+
+
+def test_identify_device(input, dut, report) -> None:
+    dut_id = input("DUT serial number")
+    dut(dut_id)
+
+    timestamp = datetime.now().astimezone().strftime("%Y%m%d-%H%M%S")
+    report.path = Path("reports") / dut_id
+    report.name = f"{dut_id}_{timestamp}"
+```
+
+For a DUT identified as `SN-1234`, this produces a PDF such as:
+
+```text
+reports/SN-1234/SN-1234_20260902-142305.pdf
+```
+
+The same base path is used for every enabled format. To generate only PDF,
+disable the other formats:
+
+```yaml
+reports:
+  html: false
+  json: false
+  csv: false
+  pdf: true
+```
+
+Only use trusted or validated text in a path. If an operator enters the DUT ID,
+reject path separators and other characters that are not valid for your naming
+scheme.
 
 ## Output path behavior
 
-`report.path` is the directory and `report.name` is the extensionless base
-name. PyProdTest appends the session timestamp and the observer's extension.
-Create report directories outside source-controlled test fixtures when
-possible, and ignore them in version control.
+`report.path` is the directory and `report.name` is the base filename.
+`reports.output` combines both into one extensionless path. Observers add their
+own extensions, and PyProdTest creates missing parent directories.
+
+PyProdTest does not add a timestamp automatically. Add one to `report.name`, as
+shown above, when files must be unique. Keep generated reports out of
+source-controlled test fixtures and ignore them in version control.
 
 ## Looped runs
 
 When `loop: true` is configured, reports are written after every full pass
-through the collected tests. PyProdTest keeps the session timestamped base name
-and inserts a zero-padded run suffix before the extension:
+through the collected tests using the `report.path` and `report.name` values
+set during that pass. PyProdTest does not add a pass number or timestamp. If the
+same path is reused, the next pass overwrites the previous report.
+
+Set a unique name while identifying each DUT to keep every pass, for example:
 
 ```text
-reports/acceptance-20260829-140507-run-0001.html
-reports/acceptance-20260829-140507-run-0001.json
-reports/acceptance-20260829-140507-run-0002.html
-reports/acceptance-20260829-140507-run-0002.json
+reports/SN-1234/SN-1234_20260902-142305.pdf
+reports/SN-1235/SN-1235_20260902-142419.pdf
 ```
 
-Session-scoped fixture finalizers run before these per-run reports are announced
-to observers and before the next pass starts. The next pass reinitializes
-session fixtures when tests request them again.
+At the start of every pass, test outcomes, logs, measurements, and the DUT
+identifier are cleared. Identify the DUT and set any dynamic report path during
+every pass. Session-scoped fixtures are finalized between passes.
+
+Stop the loop with the usual pytest interruption (for example, Ctrl+C). Only a
+completed pass produces a report.

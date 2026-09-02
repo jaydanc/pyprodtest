@@ -42,8 +42,8 @@ framework.
 
     ---
 
-    Produce timestamped HTML, JSON, CSV, and PDF artifacts from the same test
-    records.
+    Produce HTML, JSON, CSV, and PDF artifacts from the same test records, with
+    a configurable output folder and filename.
 
 </div>
 

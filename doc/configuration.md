@@ -34,7 +34,8 @@ test_order:
 
 ## Looped Mode
 
-Set `loop: true` when the same production-test plan should run continuously:
+Set `loop: true` to repeat the collected, ordered test plan until pytest is
+stopped:
 
 ```yaml
 name: Device acceptance
@@ -45,19 +46,10 @@ test_order:
   - status_test.py
 ```
 
-PyProdTest collects the tests once, applies `test_order`, then repeats that
-ordered list until pytest is stopped. The live web UI shows the current pass as
-active and keeps previous passes in its History sidebar for the lifetime of the
-browser session.
-
-At the end of every pass, PyProdTest asks pytest to tear down any remaining
-setup state before the next pass starts. That means session-scoped fixture
-finalizers run between loop passes, and the next pass reinitializes those
-fixtures when tests request them again.
-
-Enabled reports are written after every completed pass. The normal timestamped
-base name is kept, and each pass adds a run suffix before the extension, for
-example `reports/device-acceptance-20260829-140507-run-0001.html`.
+The UI keeps completed passes in its History sidebar. Test state and the DUT
+identifier reset for each pass, and session-scoped fixtures are finalized
+between passes. See [Looped runs](reports.md#looped-runs) for report naming and
+overwrite behavior.
 
 ## Test Order
 
@@ -87,10 +79,8 @@ when a fixed port is unavailable, but prevents browser-tab reuse between runs.
 | `reports.csv` | `true` | Generate a CSV report |
 | `reports.pdf` | `true` | Generate a PDF report |
 
-A session timestamp is appended to the base name before each observer adds its
-extension. For example, `reports/device-acceptance` becomes
-`reports/device-acceptance-20260829-140507.html` and matching JSON, CSV, and PDF
-files.
+For output naming, per-DUT folders, timestamps, and loop behavior, see
+[Reports](reports.md).
 
 !!! warning "Binding beyond localhost"
     Changing `ui.host` to a network-visible interface exposes the operator page

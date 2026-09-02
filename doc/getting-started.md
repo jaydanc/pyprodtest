@@ -57,9 +57,5 @@ test_order:
   - test_device.py
 ```
 
-Set `loop: true` when the same ordered test plan should repeat until pytest is
-stopped. In looped mode, session-scoped fixtures are cleaned up between passes
-and reports are written after each completed pass.
-
-Continue with [writing tests](writing-tests.md) or see every
-[configuration option](configuration.md).
+Continue with [writing tests](writing-tests.md), review every [configuration
+option](configuration.md), or learn how to organize [reports by DUT](reports.md#put-each-dut-report-in-its-own-folder).

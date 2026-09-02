@@ -23,14 +23,17 @@ input acceptor for operator prompts.
 `TestObserver` is the one-to-many boundary between the core and result
 consumers. Observers receive calls in lifecycle order:
 
-1. `on_tests_collected(test_records)`
-2. `on_test_run(test_record)`
-3. `on_test_end(test_record)`
+1. `on_tests_start()`
+2. `on_tests_collected(test_records)`
+3. `on_loop_tests_start(run_index)` for each looped pass
+4. `on_test_run(test_record)` and `on_test_end(test_record)` for each test
+5. `on_loop_tests_finished(run_index)` after each completed looped pass
+6. `on_tests_finished()` at session shutdown
 
 The live web observer publishes the current session state. HTML, JSON, CSV, and
 PDF observers retain the records and write their final artifacts at session
-shutdown. Observers consume the domain model and do not depend directly on
-pytest hook objects.
+shutdown in normal mode, or after each completed pass in looped mode. Observers
+consume the domain model and do not depend directly on pytest hook objects.
 
 ### Input acceptors
 

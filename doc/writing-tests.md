@@ -18,11 +18,8 @@ def test_output_voltage(device) -> None:
     assert 4.9 <= device.output_voltage() <= 5.1
 ```
 
-- `info(name, desc)` sets the displayed test name and description.
-- `req(*requirements)` records requirement identifiers.
-- `step(*steps)` records instructions in source order. It may be stacked.
-
-All decorators are optional.
+All decorators are optional. See the [public API](api.md) for their signatures
+and stacking behavior.
 
 ## Ask for operator input
 
@@ -87,15 +84,10 @@ threshold with pytest's `--log-cli-level=LEVEL` option.
 
 ## Test ordering
 
-Without `test_order`, pytest's final collection order is used. For an explicit
-production sequence, list filenames or filename node IDs under `test_order` in
-`pyprodtest.yaml`. PyProdTest moves matching tests into the listed order.
+For an explicit production sequence, configure [`test_order`](configuration.md#test-order).
 
 Use this to inspect node IDs:
 
 ```powershell
 uv run pytest --collect-only -q
 ```
-
-Entries that match no collected test are ignored. Collected tests that are not
-listed still run after the ordered tests in their normal pytest order.

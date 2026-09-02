@@ -58,6 +58,11 @@ def test_identify(dut) -> None:
     dut("SN-1234")
 ```
 
+Calling `dut(...)` returns the identifier, which is convenient when it is also
+needed by the test. It does not change the report filename. See [Reports by
+DUT](reports.md#put-each-dut-report-in-its-own-folder) to use the identifier in
+the output path.
+
 ### `report`
 
 The session-scoped fixture exposes:
@@ -68,6 +73,9 @@ The session-scoped fixture exposes:
 | `name` | Extensionless report base name |
 | `enabled` | Whether any reports are written |
 | `dut_id` | Device under test identifier |
+
+All four attributes are mutable for the active run. See [Reports](reports.md)
+for naming, timestamps, formats, and loop behavior.
 
 ### `measure`
 
