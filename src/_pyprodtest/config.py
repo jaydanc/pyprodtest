@@ -18,15 +18,40 @@ class UiConfig:
     port: int = 8765
 
 
-@dataclass(frozen=True)
+@dataclass
 class ReportsConfig:
     """Configuration shared by the final report observers."""
 
-    output: str = "pyprodtest-report"
+    output: str | Path = "pyprodtest-report"
     html: bool = True
     json: bool = True
     csv: bool = True
     pdf: bool = True
+    enabled: bool = True
+    dut_id: str | None = None
+
+    @property
+    def output_path(self) -> Path:
+        """Return the extensionless report directory and name as one path."""
+        return Path(self.output)
+
+    @property
+    def path(self) -> Path:
+        """Return the report output directory."""
+        return self.output_path.parent
+
+    @path.setter
+    def path(self, value: str | Path) -> None:
+        self.output = Path(value) / self.name
+
+    @property
+    def name(self) -> str:
+        """Return the extensionless report base name."""
+        return self.output_path.name
+
+    @name.setter
+    def name(self, value: str | Path) -> None:
+        self.output = self.path / Path(value)
 
 
 @dataclass(frozen=True)
@@ -34,7 +59,8 @@ class PyProdTestConfig:
     """Validated settings for one PyProdTest session."""
 
     name: str = DEFAULT_UI_NAME
-    tests: list[str] | None = None
+    loop: bool = False
+    test_order: list[str] | None = None
     ui: UiConfig = field(default_factory=UiConfig)
     reports: ReportsConfig = field(default_factory=ReportsConfig)
 
@@ -57,12 +83,13 @@ def load_config(rootpath: Path) -> PyProdTestConfig:
         )
 
     name = _non_empty_string(document.get("name", DEFAULT_UI_NAME), "name")
-    tests = _load_tests(document.get("tests"))
+    test_order = _load_test_order(document.get("test_order"))
     ui = _mapping(document.get("ui", {}), "ui")
     reports = _mapping(document.get("reports", {}), "reports")
     return PyProdTestConfig(
         name=name,
-        tests=tests,
+        loop=_boolean(document.get("loop", False), "loop"),
+        test_order=test_order,
         ui=UiConfig(
             enabled=_boolean(ui.get("enabled", True), "ui.enabled"),
             host=_non_empty_string(ui.get("host", "127.0.0.1"), "ui.host"),
@@ -80,38 +107,27 @@ def load_config(rootpath: Path) -> PyProdTestConfig:
     )
 
 
-def apply_test_plan(
-    config: pytest.Config, items: list[pytest.Item], plan: list[str] | None
-) -> None:
-    """Select and order collected items using the configured test plan."""
-    if plan is None:
+def apply_test_order(items: list[pytest.Item], test_order: list[str] | None) -> None:
+    """Order collected items using the configured filename-based order."""
+    if test_order is None:
         return
 
-    ranked = [(item, _selection_index(item.nodeid, plan)) for item in items]
-    matched = {plan[index] for _, index in ranked if index < len(plan)}
-    unmatched = [selection for selection in plan if selection not in matched]
-    if unmatched:
-        formatted = "\n  - ".join(unmatched)
-        raise pytest.UsageError(
-            f"PyProdTest plan entries matched no tests:\n  - {formatted}"
-        )
-
-    ranked.sort(key=lambda entry: entry[1])
-    selected = [item for item, index in ranked if index < len(plan)]
-    deselected = [item for item, index in ranked if index == len(plan)]
-    items[:] = selected
-    if deselected:
-        config.hook.pytest_deselected(items=deselected)
+    ranked = [
+        (_selection_index(item, test_order), position, item)
+        for position, item in enumerate(items)
+    ]
+    ranked.sort(key=lambda entry: (entry[0], entry[1]))
+    items[:] = [item for _, _, item in ranked]
 
 
-def _load_tests(value: object) -> list[str] | None:
+def _load_test_order(value: object) -> list[str] | None:
     if value is None:
         return None
     if not isinstance(value, list) or not all(
         isinstance(selection, str) and selection for selection in value
     ):
         raise pytest.UsageError(
-            "PyProdTest configuration 'tests' must be a list of paths or node IDs"
+            "PyProdTest configuration 'test_order' must be a list of filenames"
         )
     return [selection.replace("\\", "/") for selection in value]
 
@@ -148,16 +164,23 @@ def _port(value: object) -> int:
     return value
 
 
-def _selection_index(nodeid: str, plan: list[str]) -> int:
+def _selection_index(item: pytest.Item, test_order: list[str]) -> int:
     return next(
-        (index for index, selection in enumerate(plan) if _matches(nodeid, selection)),
-        len(plan),
+        (
+            index
+            for index, selection in enumerate(test_order)
+            if _matches(item, selection)
+        ),
+        len(test_order),
     )
 
 
-def _matches(nodeid: str, selection: str) -> bool:
-    return (
-        nodeid == selection
-        or nodeid.startswith(f"{selection}::")
-        or nodeid.startswith(f"{selection}[")
-    )
+def _matches(item: pytest.Item, selection: str) -> bool:
+    selection_path, separator, selection_name = selection.partition("::")
+    if Path(selection_path).name != Path(item.path).name:
+        return False
+    if not separator:
+        return True
+
+    _, _, item_name = item.nodeid.partition("::")
+    return item_name == selection_name or item_name.startswith(f"{selection_name}[")

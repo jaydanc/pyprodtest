@@ -5,6 +5,7 @@ is optional.
 
 ```yaml
 name: Device acceptance
+loop: false
 
 ui:
   enabled: true
@@ -18,9 +19,9 @@ reports:
   csv: true
   pdf: true
 
-tests:
-  - test/identify_test.py
-  - test/status_test.py::test_status_light
+test_order:
+  - identify_test.py
+  - status_test.py::test_status_light
 ```
 
 ## Top-level settings
@@ -28,7 +29,34 @@ tests:
 | Setting | Default | Purpose |
 | --- | --- | --- |
 | `name` | `Production test execution` | Live UI heading and browser title |
-| `tests` | all collected tests | Ordered list of test paths or node IDs |
+| `loop` | `false` | Repeat the collected test sequence until pytest is stopped |
+| `test_order` | all collected tests | Ordered list of filenames or filename node IDs |
+
+## Looped Mode
+
+Set `loop: true` to repeat the collected, ordered test plan until pytest is
+stopped:
+
+```yaml
+name: Device acceptance
+loop: true
+
+test_order:
+  - identify_test.py
+  - status_test.py
+```
+
+The UI keeps completed passes in its History sidebar. Test state and the DUT
+identifier reset for each pass, and session-scoped fixtures are finalized
+between passes. See [Looped runs](reports.md#looped-runs) for report naming and
+overwrite behavior.
+
+## Test Order
+
+The `test_order` list is an ordering hint. PyProdTest matches entries against the
+collected test filename, not the full path. Entries that do not match any
+collected test are ignored, and collected tests that are not listed still run
+after the listed tests in their normal pytest order.
 
 ## Live UI
 
@@ -51,10 +79,8 @@ when a fixed port is unavailable, but prevents browser-tab reuse between runs.
 | `reports.csv` | `true` | Generate a CSV report |
 | `reports.pdf` | `true` | Generate a PDF report |
 
-A session timestamp is appended to the base name before each observer adds its
-extension. For example, `reports/device-acceptance` becomes
-`reports/device-acceptance-20260829-140507.html` and matching JSON, CSV, and PDF
-files.
+For output naming, per-DUT folders, timestamps, and loop behavior, see
+[Reports](reports.md).
 
 !!! warning "Binding beyond localhost"
     Changing `ui.host` to a network-visible interface exposes the operator page
