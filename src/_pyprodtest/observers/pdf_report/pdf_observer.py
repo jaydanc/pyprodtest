@@ -27,7 +27,7 @@ class PdfObserver(TestObserver):
     ) -> None:
         self.settings = settings
         self._test_records: list[TestRecord] = []
-        self._wrote_run_report = False
+        self._wrote_loop_report = False
 
     def on_tests_start(self) -> None:
         pass
@@ -46,16 +46,12 @@ class PdfObserver(TestObserver):
 
     def on_loop_tests_finished(self, run_index: int) -> None:
         """Write one PDF report for a completed loop run."""
-        self._wrote_run_report = True
-        self._write(
-            self.settings.output_path.with_name(
-                f"{self.settings.output_path.stem}_run_{run_index}"
-            )
-        )
+        self._wrote_loop_report = True
+        self._write(self.settings.output_path)
 
     def on_tests_finished(self) -> None:
         """Write the final PDF using the latest fixture settings."""
-        if self._wrote_run_report:
+        if self._wrote_loop_report:
             return
         self._write(self.settings.output_path)
 
@@ -76,7 +72,7 @@ class PdfObserver(TestObserver):
             leftMargin=18 * mm,
             topMargin=22 * mm,
             bottomMargin=18 * mm,
-            title=self.settings.dut_id,
+            title=self.settings.dut_id or "Unknown DUT",
             author="PyProdTest",
         )
         document.build(
@@ -88,7 +84,7 @@ class PdfObserver(TestObserver):
     def _story(self, styles: dict[str, ParagraphStyle]) -> list[object]:
         outcomes = Counter(record.outcome for record in self._test_records)
         story: list[object] = [
-            Paragraph(escape(self.settings.dut_id), styles["title"]),
+            Paragraph(escape(self.settings.dut_id or "Unknown DUT"), styles["title"]),
             Paragraph("Production test report", styles["subtitle"]),
             Spacer(1, 7 * mm),
             summary_table(outcomes, len(self._test_records), styles),

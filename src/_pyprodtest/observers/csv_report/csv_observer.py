@@ -30,7 +30,7 @@ class CsvObserver(TestObserver):
     def __init__(self, settings: ReportsConfig) -> None:
         self.settings = settings
         self._test_records: list[TestRecord] = []
-        self._wrote_run_report = False
+        self._wrote_loop_report = False
 
     def on_tests_start(self) -> None:
         pass
@@ -49,16 +49,12 @@ class CsvObserver(TestObserver):
 
     def on_loop_tests_finished(self, run_index: int) -> None:
         """Write one CSV report for a completed loop run."""
-        self._wrote_run_report = True
-        self._write(
-            self.settings.output_path.with_name(
-                f"{self.settings.output_path.stem}_run_{run_index}"
-            )
-        )
+        self._wrote_loop_report = True
+        self._write(self.settings.output_path)
 
     def on_tests_finished(self) -> None:
         """Write the CSV report when reporting is enabled."""
-        if self._wrote_run_report:
+        if self._wrote_loop_report:
             return
         self._write(self.settings.output_path)
 

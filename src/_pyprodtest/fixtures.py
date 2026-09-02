@@ -37,16 +37,6 @@ def dut() -> Callable[[str], str]:
         if not isinstance(dut_id, str):
             raise TypeError("dut_id must be a string")
         _plugin_state().config.reports.dut_id = dut_id
-
-        # Include DUT in folder
-        _plugin_state().config.reports.path = (
-            _plugin_state().config.reports.path / dut_id
-        )
-
-        # Include DUT in name
-        _plugin_state().config.reports.name = (
-            _plugin_state().config.reports.name + f"_{dut_id}"
-        )
         return dut_id
 
     return set_dut_id

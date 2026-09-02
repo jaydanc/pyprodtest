@@ -3,8 +3,6 @@
 import logging
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import datetime
-from pathlib import Path
 
 import pytest
 
@@ -96,9 +94,6 @@ def pytest_configure(config: pytest.Config) -> None:
     _enable_live_logging(config)
 
     project_config = load_config(config.rootpath)
-    project_config.reports.output = _timestamped_report_output(
-        project_config.reports.output
-    )
 
     collect_only = config.getoption("--collect-only")
     observers = _create_report_observers(project_config)
@@ -257,13 +252,6 @@ def _run_loop_iteration(
     _reset_test_records(state.records.values())
     state.config.reports.dut_id = None
     state.current_test_nodeid = None
-
-    # WARNING; Do not reassign state.config config
-    # Revert report changes
-    disk_config = load_config(session.config.rootpath)
-    state.config.reports.output = _timestamped_report_output(disk_config.reports.output)
-    state.config.reports.name = disk_config.reports.name
-
     state.on_loop_tests_start(run_index)
 
     try:
@@ -297,16 +285,6 @@ def _teardown_remaining_session_state(session: pytest.Session) -> None:
     setup_state = getattr(session, "_setupstate", None)
     if setup_state is not None:
         setup_state.teardown_exact(None)
-
-
-def _timestamped_report_output(
-    output: str | Path, timestamp: datetime | None = None
-) -> Path:
-    """Append a filesystem-safe session timestamp to a report basename."""
-    output_path = Path(output)
-    timestamp = timestamp or datetime.now().astimezone()
-    suffix = timestamp.strftime("%Y%m%d-%H%M%S")
-    return output_path.parent / f"{output_path.name}-{suffix}"
 
 
 def _create_report_observers(
